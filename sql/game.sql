@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS `games`;
+
+CREATE TABLE `Games` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` char(255) COLLATE utf8_bin NOT NULL DEFAULT '',
+ # `DateCreated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_created` datetime DEFAULT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin STATS_PERSISTENT=0 ROW_FORMAT=DYNAMIC COMMENT='Games to join';
+
+INSERT INTO `Games` VALUES (1,'Game1',now());
