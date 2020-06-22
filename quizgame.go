@@ -20,6 +20,34 @@ type PlayerResp struct {
 	Payload interface{}
 }
 
+type startHandler struct {
+}
+
+func (h *startHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+
+	var preq *PlayerReq
+	err := decoder.Decode(&preq)
+
+	if err != nil {
+		log.Printf("Error: %s", err)
+		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	if _, ok := Games[preq.AccessCode]; ok {
+		if Games[preq.AccessCode].CheckPermission(preq.Xid) {
+			log.Printf("Starting game with Access Code %s.", preq.AccessCode)
+			Games[preq.AccessCode].Start()
+		}
+	} else {
+		err = errors.New("A game with that access code does not exist.")
+		log.Printf("Error: %s", err)
+		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
+		return
+	}
+}
+
 type htmlHandler struct {
 }
 
@@ -72,7 +100,7 @@ func (h *joinGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Handle add player.")
 
-	pr := new(PlayerResp)
+	presp := new(PlayerResp)
 
 	decoder := json.NewDecoder(r.Body)
 
@@ -96,7 +124,7 @@ func (h *joinGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		pr.Html = string(file)
+		presp.Html = string(file)
 
 	} else {
 
@@ -115,11 +143,21 @@ func (h *joinGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("Created new player with xid %s.", p.Xid)
 
+		file, err := ioutil.ReadFile("wwwroot/startgame.html")
+
+		if err != nil {
+			log.Printf("Error: %s", err)
+			http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		presp.Html = string(file)
+
 	}
 
-	pr.Payload = p
+	presp.Payload = p
 
-	jsonOut, err := json.Marshal(pr)
+	jsonOut, err := json.Marshal(presp)
 
 	if err != nil {
 		log.Printf("Error: %s", err)
@@ -150,6 +188,5 @@ func main() {
 	http.Handle("/score", new(scoreHandler))
 	//	http.Handle("/pollgame", pollGameHandler)
 	//	http.Handle("/submitanswer", submitAnswerHandler)
-
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

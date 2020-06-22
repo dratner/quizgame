@@ -94,6 +94,10 @@ func (g *Game) PlayQuestion(q *Question) error {
 	return nil
 }
 
+func (g *Game) Start() {
+
+}
+
 func (g *Game) Play() error {
 	var err error
 
