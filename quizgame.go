@@ -16,8 +16,9 @@ type PlayerReq struct {
 }
 
 type PlayerResp struct {
-	Html    string
-	Payload interface{}
+	Html          string
+	TimeRemaining int
+	Payload       interface{}
 }
 
 type startHandler struct {
@@ -64,10 +65,10 @@ func (h *htmlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(file)
 }
 
-type newGameHandler struct {
+type newHandler struct {
 }
 
-func (h *newGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *newHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Handle create new game.")
 
@@ -93,10 +94,10 @@ func (h *newGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonOut)
 }
 
-type joinGameHandler struct {
+type joinHandler struct {
 }
 
-func (h *joinGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *joinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Handle add player.")
 
@@ -170,23 +171,36 @@ func (h *joinGameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonOut)
 }
 
-func pollGameHandler(w http.ResponseWriter, r *http.Request) {
-}
-
-func submitAnswerHandler(w http.ResponseWriter, r *http.Request) {
-}
-
 var Games map[string]*Game
 
 func main() {
 
 	Games = make(map[string]*Game)
+	/*
+	   	g := new(Game)
+	   	q1 := new(Question)
+	   	q1.Summary = "This was a great book."
+	   	q1.First = "In the beginning..."
+	   	q1.Last = "...The end."
+	   	q2 := new(Question)
+	   	q2.Summary = "This was also great book."
+	   	q2.First = "In the beginning..."
+	   	q2.Last = "...The end."
+	   	g.Questions = append(g.Questions,q1)
+	   	g.Questions = append(g.Questions,q2)
 
+
+	   	jsonOut, _ := json.Marshal(g.Questions)
+	   	fmt.Printf("%s",string(jsonOut))
+	   return
+	*/
 	http.Handle("/play", new(htmlHandler))
-	http.Handle("/newgame", new(newGameHandler))
-	http.Handle("/joingame", new(joinGameHandler))
+	http.Handle("/new", new(newHandler))
+	http.Handle("/join", new(joinHandler))
 	http.Handle("/score", new(scoreHandler))
-	//	http.Handle("/pollgame", pollGameHandler)
-	//	http.Handle("/submitanswer", submitAnswerHandler)
+	http.Handle("/start", new(startHandler))
+	//	http.Handle("/poll", new(pollHandler))
+	//	http.Handle("/submit", new(submitHandler))
+	//	http.Handle("/guess", new(guessHandler))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

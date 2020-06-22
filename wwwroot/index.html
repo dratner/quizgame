@@ -6,21 +6,35 @@
 
 var xid = "";
 var accesscode = "";
-var scoreIntervalID;
+var PollIntervalID;
 
 function leaveGame() {
 	acode.innerHTML = "";
 	game.innerHTML = ""; 
 	xid = "";
 	accesscode = "";
-	clearInterval(scoreIntervalID);
+	clearInterval(PollIntervalID);
 	alert("Left.");
+}
+
+function startGame() {
+	var xhr = new XMLHttpRequest();
+	var url = "/start";
+
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {}
+	};
+
+   var data = JSON.stringify({ "AccessCode": accesscode, "Xid": xid }); 
+   xhr.send(data);
 }
 
 function newGame() {
 
 	var xhr = new XMLHttpRequest();
-	var url = "/newgame";
+	var url = "/new";
 
 	xhr.open("POST", url, true);
 	xhr.setRequestHeader("Content-Type", "application/json");
@@ -60,7 +74,7 @@ function joinGame() {
     let acode = document.querySelector('#accesscode');
 
 	var xhr = new XMLHttpRequest();
-	var url = "/joingame";
+	var url = "/join";
 
 	xhr.open("POST", url, true);
 	xhr.setRequestHeader("Content-Type", "application/json");
@@ -69,8 +83,8 @@ function joinGame() {
         	var json = JSON.parse(xhr.responseText);
         	xid = json.Payload.Xid;
         	game.innerHTML = json.Html; 
-        	if (scoreIntervalID == null) {
-        		scoreIntervalID = setInterval(scoreGame, 2000)
+        	if (PollIntervalID == null) {
+        		PollIntervalID = setInterval(scoreGame, 2000)
         	}
     	}
 	};
@@ -91,12 +105,14 @@ function joinGame() {
 <p class="topmenu">
 	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
-    <a href="javascript:scoreGame();">Score Game</a>
-
+    <a href="javascript:scoreGame();">Score Game</a>&nbsp;&nbsp;&nbsp;
+    <a href="javascript:pollGame();">Poll Game</a>&nbsp;&nbsp;&nbsp;
+	<a href="javascript:leaveGame();">Leave Game</a>
 </p>
 <h3>Players</h3>
 <div class="scoresview" id="scores"></div>
+<h3>Time</h3>
+<div class="timerview" id="timer"></div>
 <h3>Access Code</h3>
 <div class="acodeview" id="acode"></div>
 <hr />

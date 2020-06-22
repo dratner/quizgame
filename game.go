@@ -1,12 +1,20 @@
 package main
 
 import (
-	//"fmt"
 	"encoding/json"
 	"errors"
 	"github.com/rs/xid"
 	"io/ioutil"
+	"log"
 	"strings"
+)
+
+//The form for State is enum+(Question Xid)
+const (
+	PoseQuestion = "pose"
+	OfferAnsers  = "answer"
+	ShowResults  = "show"
+	Final        = "final"
 )
 
 type Player struct {
@@ -22,11 +30,9 @@ type Answer struct {
 }
 
 type Question struct {
-	QuestionID      int
-	Question        string
-	Answers         []string
-	CorrectAnswerID int
-	Timeout         int
+	Summary string
+	First   string
+	Last    string
 }
 
 type GameState int
@@ -95,7 +101,12 @@ func (g *Game) PlayQuestion(q *Question) error {
 }
 
 func (g *Game) Start() {
-
+	err := g.FromFile("games/g1.json")
+	if err != nil {
+		log.Printf("Error: %s", err)
+		return
+	}
+	log.Printf("Game file loaded.")
 }
 
 func (g *Game) Play() error {
