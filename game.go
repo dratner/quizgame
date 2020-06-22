@@ -13,6 +13,7 @@ type Player struct {
 	Xid        string
 	Name       string
 	AccessCode string
+	Score      int
 }
 
 type Answer struct {
@@ -40,17 +41,16 @@ const (
 func NewGame() *Game {
 	xid := xid.New().String()
 	accessCode := strings.ToUpper(xid[len(xid)-4 : len(xid)])
-	players := make(map[string]*Player)
-	return &Game{Xid: xid, AccessCode: accessCode, Players: players}
+	return &Game{Xid: xid, AccessCode: accessCode}
 }
 
 type Game struct {
 	Xid        string
-	GameID     int                `json:GameID sql:game_id`
-	AccessCode string             `json:AccessCode sql:access_code`
-	Players    map[string]*Player `json:Players sql:players`
-	Questions  []*Question        `json:Questions sql:questions`
-	State      string             `json:State sql:state`
+	GameID     int         `json:GameID sql:game_id`
+	AccessCode string      `json:AccessCode sql:access_code`
+	Players    []*Player   `json:Players sql:players`
+	Questions  []*Question `json:Questions sql:questions`
+	State      string      `json:State sql:state`
 }
 
 func (g *Game) FromFile(f string) error {
@@ -64,6 +64,17 @@ func (g *Game) FromFile(f string) error {
 	return json.Unmarshal([]byte(file), &g)
 }
 
+// This function checks to see if the requestor has permission to view the game.
+// For now, the token is just the xid.
+func (g *Game) CheckPermission(token string) bool {
+	for _, p := range g.Players {
+		if p.Xid == token {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *Game) AddPlayer(name string) (*Player, error) {
 	for _, n := range g.Players {
 		if n.Name == name {
@@ -71,7 +82,7 @@ func (g *Game) AddPlayer(name string) (*Player, error) {
 		}
 	}
 	p := &Player{Xid: xid.New().String(), Name: name, AccessCode: g.AccessCode}
-	g.Players[p.Xid] = p
+	g.Players = append(g.Players, p)
 	return p, nil
 }
 

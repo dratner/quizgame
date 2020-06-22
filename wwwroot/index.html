@@ -3,54 +3,104 @@
 <head>
 <title>Quiz Game</title>
 <script type="text/javascript">
-function joinGame() { 
 
-	// Sending and receiving data in JSON format using POST method
-	// https://stackoverflow.com questions/24468459/sending-a-json-to-server-and-retrieving-a-json-in-return-without-jquery	
+var xid = "";
+var accesscode = "";
+var scoreIntervalID;
 
-    let result = document.querySelector('.result'); 
-    let name = document.querySelector('#name'); 
-    let accesscode = document.querySelector('#accesscode');
+function leaveGame() {
+	acode.innerHTML = "";
+	game.innerHTML = ""; 
+	xid = "";
+	accesscode = "";
+	clearInterval(scoreIntervalID);
+	alert("Left.");
+}
+
+function newGame() {
 
 	var xhr = new XMLHttpRequest();
-	//var url = "http://localhost:8080/joingame";
+	var url = "/newgame";
+
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var json = JSON.parse(xhr.responseText);
+        	accesscode = json.Payload.AccessCode;
+        	acode.innerHTML = accesscode;
+        	game.innerHTML = json.Html; 
+    	}
+	};
+
+   var data = JSON.stringify({}); 
+   xhr.send(data);
+}
+
+function scoreGame() {
+	var xhr = new XMLHttpRequest();
+	var url = "/score";
+
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var json = JSON.parse(xhr.responseText);
+        	scores.innerHTML = json.Html; 
+    	}
+	};
+
+	var data = JSON.stringify({ "AccessCode": accesscode, "Xid": xid }); 
+   	xhr.send(data);
+}
+
+function joinGame() { 
+
+    let name = document.querySelector('#name'); 
+    let acode = document.querySelector('#accesscode');
+
+	var xhr = new XMLHttpRequest();
 	var url = "/joingame";
 
 	xhr.open("POST", url, true);
 	xhr.setRequestHeader("Content-Type", "application/json");
 	xhr.onreadystatechange = function () {
     	if (xhr.readyState === 4 && xhr.status === 200) {
-    		result.innerHTML = this.responseText; 
         	var json = JSON.parse(xhr.responseText);
-        	console.log(json.Name + ", " + json.AccessCode);
+        	xid = json.Payload.Xid;
+        	game.innerHTML = json.Html; 
+        	if (scoreIntervalID == null) {
+        		scoreIntervalID = setInterval(scoreGame, 2000)
+        	    alert("interval "+intervalID)
+        	}
     	}
 	};
-	//var data = JSON.stringify({"AccessCode": "ESE0", "Name": "Bob"});
-    var data = JSON.stringify({ "AccessCode": accesscode.value, "Name": name.value }); 
+
+	if (name != null && accesscode != null) {
+    	var data = JSON.stringify({ "AccessCode": acode.value, "Name": name.value }); 
+    } else {
+    	var data = JSON.stringify({});
+    }
+
 	xhr.send(data);
-	alert(data)
 }
 </script>
 </head>
 <body>
 <h1>Quiz game!</h1>
-<h5>version 2</h5>
+<h5>version 5</h5>
 <p class="topmenu">
-	<a href="javascript:startGame();">Start a game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:joinGame();">Join a game</a>
+	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
+	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
+	<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
+    <a href="javascript:scoreGame();">Score Game</a>
+
 </p>
-<p class="scores"></p>	
-<p class="result">
-        <!-- Making a text input -->
-        <input type="text" id="name" placeholder="Your name"> 
-        <input type="text" id="accesscode" placeholder="Access code"> 
-          
-        <!-- Button to send data -->
-        <button onclick="joinGame()">Join Game!</button> 
-  
-      <!-- For printing result from server -->
-      <!-- <p class="result" style="color:green"></p> -->
-      
-   </p> 
+<h3>Players</h3>
+<div class="scoresview" id="scores"></div>
+<h3>Access Code</h3>
+<div class="acodeview" id="acode"></div>
+<hr />
+<div class="gameview" id="game"></div>    
 </body>
 </html>
