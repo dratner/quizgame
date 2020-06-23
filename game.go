@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"encoding/json"
 	"errors"
 	"github.com/rs/xid"
@@ -11,6 +12,7 @@ import (
 
 //The form for State is enum+(Question Xid)
 const (
+	Setup		=  "setup"
 	PoseQuestion = "pose"
 	OfferAnsers  = "answer"
 	ShowResults  = "show"
@@ -30,19 +32,11 @@ type Answer struct {
 }
 
 type Question struct {
+	Xid     string
 	Summary string
 	First   string
 	Last    string
 }
-
-type GameState int
-
-const (
-	Signup GameState = iota + 1
-	AskQuestion
-	ShowAnswer
-	ScoreGame
-)
 
 func NewGame() *Game {
 	xid := xid.New().String()
@@ -51,12 +45,33 @@ func NewGame() *Game {
 }
 
 type Game struct {
-	Xid        string
-	GameID     int         `json:GameID sql:game_id`
-	AccessCode string      `json:AccessCode sql:access_code`
-	Players    []*Player   `json:Players sql:players`
-	Questions  []*Question `json:Questions sql:questions`
-	State      string      `json:State sql:state`
+	Xid                string
+	GameID             int         `json:GameID sql:game_id`
+	AccessCode         string      `json:AccessCode sql:access_code`
+	Players            []*Player   `json:Players sql:players`
+	Questions          []*Question `json:Questions sql:questions`
+	state              string      `json:State sql:state`
+	CurrentQuestion 	*Question
+}
+
+func (g *Game) GetState() string {
+	if g.CurrentQuestion == nil {
+		return Setup
+	}
+	return g.state + g.CurrentQuestion.Xid
+}
+
+func (g *Game) Timeout() int {
+	return 3
+}
+
+func (g *Game) ShowGame(token string) string {
+	switch g.state {
+	case PoseQuestion:
+		return fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>",g.CurrentQuestion.Summary)
+	default:
+		return ""
+	}
 }
 
 func (g *Game) FromFile(f string) error {
@@ -67,7 +82,17 @@ func (g *Game) FromFile(f string) error {
 		return err
 	}
 
-	return json.Unmarshal([]byte(file), &g)
+	err = json.Unmarshal([]byte(file), &g)
+
+	if err != nil {
+		return err
+	}
+
+	for _, q := range g.Questions {
+		q.Xid = xid.New().String()
+	}
+
+	return nil
 }
 
 // This function checks to see if the requestor has permission to view the game.
@@ -97,6 +122,7 @@ func (g *Game) Setup() error {
 }
 
 func (g *Game) PlayQuestion(q *Question) error {
+	g.state = PoseQuestion
 	return nil
 }
 
@@ -113,6 +139,7 @@ func (g *Game) Play() error {
 	var err error
 
 	for _, q := range g.Questions {
+		g.CurrentQuestion = q
 		err = g.PlayQuestion(q)
 	}
 

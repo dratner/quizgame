@@ -10,10 +10,17 @@ import (
 	"strconv"
 )
 
-type scoreHandler struct {
+type GamePoll struct {
+	ScoreHtml string
+	TimerHtml string
+	State     string
+	GameHtml  string
 }
 
-func (h *scoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+type pollHandler struct {
+}
+
+func (h *pollHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Handle score request.")
 
@@ -22,15 +29,21 @@ func (h *scoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var preq *PlayerReq
 	err := decoder.Decode(&preq)
 
-	presp := new(PlayerResp)
+	presp := new(GamePoll)
 
 	if _, ok := Games[preq.AccessCode]; ok {
 		var payload []*Player
 		for _, p := range Games[preq.AccessCode].Players {
 			payload = append(payload, p)
-			presp.Html += p.Name + ": " + strconv.Itoa(p.Score) + "&nbsp;&nbsp;&nbsp;"
+			presp.ScoreHtml += p.Name + ": " + strconv.Itoa(p.Score) + "&nbsp;&nbsp;&nbsp;"
 		}
-		presp.Payload = payload
+		presp.State = Games[preq.AccessCode].GetState()
+		if Games[preq.AccessCode].Timeout() < 0 {
+			presp.TimerHtml = ""
+		} else {
+			presp.TimerHtml = fmt.Sprintf("%d seconds", Games[preq.AccessCode].Timeout())
+		}
+		presp.GameHtml = Games[preq.AccessCode].ShowGame(preq.Xid)
 	} else {
 		err = errors.New("A game with that access code does not exist.")
 	}
