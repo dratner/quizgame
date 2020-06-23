@@ -1,22 +1,29 @@
 package main
 
 import (
-	"fmt"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/rs/xid"
 	"io/ioutil"
 	"log"
-	"strings"
+	"strconv"
+	//	"strings"
 )
 
 //The form for State is enum+(Question Xid)
 const (
-	Setup		=  "setup"
-	PoseQuestion = "pose"
-	OfferAnsers  = "answer"
-	ShowResults  = "show"
-	Final        = "final"
+	StateSetup        = "setup"
+	StateJoined       = "joined"
+	StatePoseQuestion = "pose"
+	StateOfferAnsers  = "answer"
+	StateShowResults  = "show"
+	StateFinal        = "final"
+	ReqTypeJoin       = "join"
+	ReqTypeStart      = "start"
+	ReqTypePoll       = "poll"
+	ReqTypeEnd        = "end"
+	ReqTypeTimeout    = "timeout"
 )
 
 type Player struct {
@@ -38,37 +45,85 @@ type Question struct {
 	Last    string
 }
 
-func NewGame() *Game {
-	xid := xid.New().String()
-	accessCode := strings.ToUpper(xid[len(xid)-4 : len(xid)])
-	return &Game{Xid: xid, AccessCode: accessCode}
+func PlayGame(ch chan PlayerReq, id string, accesscode string) {
+
+	var presp PlayerResp
+
+	g := &Game{Xid: id, AccessCode: accesscode, State: StateJoined}
+
+	for {
+		req := <-ch
+
+		switch req.RequestType {
+		case ReqTypeJoin:
+			log.Printf("Adding player to game %s", g.AccessCode)
+			p, err := g.AddPlayer(req.Payload)
+			if err != nil {
+				log.Printf("Error: %s", err)
+			} else {
+				file, _ := ioutil.ReadFile("wwwroot/startgame.html")
+				presp = PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: string(file), State: StateJoined, Payload: p.Xid}
+				req.RespChan <- presp
+			}
+			break
+		case ReqTypePoll:
+			log.Printf("Polling game %s", g.AccessCode)
+			if g.CheckPermission(req.Xid) {
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Xid), State: g.State, Payload: ""}
+				req.RespChan <- presp
+			}
+			break
+		case ReqTypeStart:
+			log.Printf("Starting game %s", g.AccessCode)
+			break
+		case ReqTypeEnd:
+			log.Printf("Ending game %s", g.AccessCode)
+			break
+		case ReqTypeTimeout:
+			log.Printf("Question timeout for game %s", g.AccessCode)
+			break
+		default:
+			log.Printf("Unidentified request.")
+			break
+		}
+		presp = PlayerResp{}
+		close(req.RespChan)
+	}
 }
 
 type Game struct {
-	Xid                string
-	GameID             int         `json:GameID sql:game_id`
-	AccessCode         string      `json:AccessCode sql:access_code`
-	Players            []*Player   `json:Players sql:players`
-	Questions          []*Question `json:Questions sql:questions`
-	state              string      `json:State sql:state`
-	CurrentQuestion 	*Question
+	Xid             string
+	GameID          int         `json:GameID sql:game_id`
+	AccessCode      string      `json:AccessCode sql:access_code`
+	Players         []*Player   `json:Players sql:players`
+	Questions       []*Question `json:Questions sql:questions`
+	State           string      `json:State sql:state`
+	CurrentQuestion *Question
+}
+
+func (g *Game) GetScores() string {
+	payload := ""
+	for _, p := range g.Players {
+		payload += p.Name + ": " + strconv.Itoa(p.Score) + "&nbsp;&nbsp;&nbsp;"
+	}
+	return payload
 }
 
 func (g *Game) GetState() string {
 	if g.CurrentQuestion == nil {
-		return Setup
+		return StateSetup
 	}
-	return g.state + g.CurrentQuestion.Xid
+	return g.State + g.CurrentQuestion.Xid
 }
 
-func (g *Game) Timeout() int {
-	return 3
+func (g *Game) GetTimer() string {
+	return "3"
 }
 
 func (g *Game) ShowGame(token string) string {
-	switch g.state {
-	case PoseQuestion:
-		return fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>",g.CurrentQuestion.Summary)
+	switch g.State {
+	case StatePoseQuestion:
+		return fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>", g.CurrentQuestion.Summary)
 	default:
 		return ""
 	}
@@ -122,7 +177,7 @@ func (g *Game) Setup() error {
 }
 
 func (g *Game) PlayQuestion(q *Question) error {
-	g.state = PoseQuestion
+	g.State = StatePoseQuestion
 	return nil
 }
 

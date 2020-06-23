@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"encoding/json"
 	"errors"
@@ -73,4 +74,4 @@ func (h *pollHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// DELETE FOR PROD
 
 	w.Write(jsonOut)
-}
+}*/

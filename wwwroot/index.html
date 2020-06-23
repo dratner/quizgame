@@ -6,17 +6,79 @@
 
 var xid = "";
 var accesscode = "";
-var PollIntervalID;
+var pollIntervalID;
 var state = "";
 
 function leaveGame() {
 	acode.innerHTML = "";
 	game.innerHTML = ""; 
+	score.innerHTML = "";
+	time.innerHTML = "";
 	xid = "";
 	accesscode = "";
-	clearInterval(PollIntervalID);
-	alert("Left.");
+	clearInterval(pollIntervalID);
 }
+
+function sendReq(url, data, doneFunc) {
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+   //alert (xhr.responseText) 		
+        	var json = JSON.parse(xhr.responseText);
+        	if (state != json.State) {
+        	    state = json.State;
+        	    game.innerHTML = json.GameHtml;
+        	}
+        	scores.innerHTML = json.ScoreHtml;
+        	timer.innerHTML = json.TimerHtml;
+        	doneFunc(json.Payload);
+    	}
+	};
+
+   xhr.send(data);
+}
+
+function newGame() {
+	doneFunc = function(data) { 
+		accesscode = data; 
+		acode.innerHTML = accesscode;
+	}
+	sendReq("/new",JSON.stringify({}),doneFunc);
+}
+
+function joinGame() {
+	
+	let name = document.querySelector('#name'); 
+    let acode = document.querySelector('#accesscode');
+	
+	if (name == null || accesscode == null) {
+		game.innerHTML = `
+			<input type="text" id="name" placeholder="Your name">
+			<input type="text" id="accesscode" placeholder="Access code">
+			<button onclick="joinGame()">Join Game!</button>
+			`;
+		return;
+	} 
+
+	doneFunc = function(data) {
+		xid = data;
+        if (pollIntervalID != null) {
+        	clearInterval(pollIntervalID);
+        }	
+        pollIntervalID = setInterval(pollGame, 2000);
+	}
+
+	sendReq("/req",JSON.stringify({ "AccessCode": acode.value, "Payload": name.value, "RequestType": "join" }),doneFunc);
+}
+
+function pollGame() {
+	doneFunc = function(data) {};
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "RequestType": "poll" }),doneFunc);
+}
+
+// DONE TO HERE
 
 function startGame() {
 	var xhr = new XMLHttpRequest();
@@ -32,88 +94,19 @@ function startGame() {
    xhr.send(data);
 }
 
-function newGame() {
-
-	var xhr = new XMLHttpRequest();
-	var url = "/new";
-
-	xhr.open("POST", url, true);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.onreadystatechange = function () {
-    	if (xhr.readyState === 4 && xhr.status === 200) {
-        	var json = JSON.parse(xhr.responseText);
-        	accesscode = json.Payload.AccessCode;
-        	acode.innerHTML = accesscode;
-        	game.innerHTML = json.Html; 
-    	}
-	};
-
-   var data = JSON.stringify({}); 
-   xhr.send(data);
-}
-
-function pollGame() {
-	var xhr = new XMLHttpRequest();
-	var url = "/poll";
-
-	xhr.open("POST", url, true);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.onreadystatechange = function () {
-    	if (xhr.readyState === 4 && xhr.status === 200) {
-        	var json = JSON.parse(xhr.responseText);
-        	if (json.State != state) {
-        		game.innerHTML = json.GameHtml;
-        		state = json.State;
-        	}
-        	scores.innerHTML = json.ScoreHtml; 
-        	timer.innerHTML = json.TimerHtml;
-    	}
-	};
-
-	var data = JSON.stringify({ "AccessCode": accesscode, "Xid": xid }); 
-   	xhr.send(data);
-}
-
-function joinGame() { 
-
-    let name = document.querySelector('#name'); 
-    let acode = document.querySelector('#accesscode');
-
-	var xhr = new XMLHttpRequest();
-	var url = "/join";
-
-	xhr.open("POST", url, true);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.onreadystatechange = function () {
-    	if (xhr.readyState === 4 && xhr.status === 200) {
-        	var json = JSON.parse(xhr.responseText);
-        	xid = json.Payload.Xid;
-        	game.innerHTML = json.Html; 
-        	if (PollIntervalID == null) {
-        		PollIntervalID = setInterval(pollGame, 2000)
-        	}
-    	}
-	};
-
-	if (name != null && accesscode != null) {
-    	var data = JSON.stringify({ "AccessCode": acode.value, "Name": name.value }); 
-    } else {
-    	var data = JSON.stringify({});
-    }
-
-	xhr.send(data);
-}
 </script>
 </head>
 <body>
 <h1>Quiz game!</h1>
-<h5>version 5</h5>
+<h5>version 6</h5>
 <p class="topmenu">
 	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
     <a href="javascript:scoreGame();">Score Game</a>&nbsp;&nbsp;&nbsp;
     <a href="javascript:pollGame();">Poll Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:leaveGame();">Leave Game</a>
+	<a href="javascript:readPayload();">Payload</a>
+
 </p>
 <h3>Players</h3>
 <div class="scoresview" id="scores"></div>
