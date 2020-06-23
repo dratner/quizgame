@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	//	"errors"
 	"fmt"
 	"github.com/rs/xid"
 	"io/ioutil"
@@ -137,119 +136,6 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("Request complete.")
 }
 
-/*
-type startHandler struct {
-}
-
-func (h *startHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-
-	var preq *PlayerReq
-	err := decoder.Decode(&preq)
-
-	if err != nil {
-		log.Printf("Error: %s", err)
-		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-		return
-	}
-
-	if _, ok := Games[preq.AccessCode]; ok {
-		if Games[preq.AccessCode].CheckPermission(preq.Xid) {
-			log.Printf("Starting game with Access Code %s.", preq.AccessCode)
-			Games[preq.AccessCode].Start()
-		}
-	} else {
-		err = errors.New("A game with that access code does not exist.")
-		log.Printf("Error: %s", err)
-		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-		return
-	}
-}
-
-
-
-
-
-type joinHandler struct {
-}
-
-func (h *joinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	log.Printf("Handle add player.")
-
-	presp := new(PlayerResp)
-
-	decoder := json.NewDecoder(r.Body)
-
-	var p *Player
-	err := decoder.Decode(&p)
-
-	if err != nil {
-		log.Printf("Error: %s", err)
-		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-		return
-	}
-
-	// If the player isn't defined, serve the request html.
-	if p.AccessCode == "" {
-		log.Printf("No player data so serving request page.")
-		file, err := ioutil.ReadFile("wwwroot/joingame.html")
-
-		if err != nil {
-			log.Printf("Error: %s", err)
-			http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		presp.Html = string(file)
-
-	} else {
-
-		log.Printf("Got player with name %s for game with access code %s.", p.Name, p.AccessCode)
-
-		if _, ok := Games[p.AccessCode]; ok {
-			p, err = Games[p.AccessCode].AddPlayer(p.Name)
-		} else {
-			err = errors.New("A game with that access code does not exist.")
-		}
-
-		if err != nil {
-			log.Printf("Error: %s", err)
-			http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-			return
-		}
-		log.Printf("Created new player with xid %s.", p.Xid)
-
-		file, err := ioutil.ReadFile("wwwroot/startgame.html")
-
-		if err != nil {
-			log.Printf("Error: %s", err)
-			http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		presp.Html = string(file)
-
-	}
-
-	presp.Payload = p
-
-	jsonOut, err := json.Marshal(presp)
-
-	if err != nil {
-		log.Printf("Error: %s", err)
-		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("Handler successful.")
-
-	w.Write(jsonOut)
-}
-
-var Games map[string]*Game
-*/
-
 func main() {
 
 	Games = make(map[string]chan PlayerReq)
@@ -258,13 +144,6 @@ func main() {
 	http.Handle("/new", new(newHandler))
 	http.Handle("/req", new(reqHandler))
 
-	/*http.Handle("/play", new(htmlHandler))
-	http.Handle("/join", new(joinHandler))
-	http.Handle("/start", new(startHandler))
-	http.Handle("/poll", new(pollHandler))
-	*/
-	//	http.Handle("/submit", new(submitHandler))
-	//	http.Handle("/guess", new(guessHandler))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	/*

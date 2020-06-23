@@ -75,13 +75,14 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypeStart:
 			log.Printf("Starting game %s", g.AccessCode)
-			break
-		case ReqTypeEnd:
-			log.Printf("Ending game %s", g.AccessCode)
+			g.Start()
 			break
 		case ReqTypeTimeout:
 			log.Printf("Question timeout for game %s", g.AccessCode)
 			break
+		case ReqTypeEnd:
+			log.Printf("Ending game %s", g.AccessCode)
+			return
 		default:
 			log.Printf("Unidentified request.")
 			break
