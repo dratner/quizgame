@@ -96,6 +96,11 @@ function startGame() {
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": xid, "RequestType": "start" }),doneFunc);
 }
 
+function submitGame() {
+	doneFunc = function(data) {};
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": xid, "RequestType": "answer" }),doneFunc);
+}
+
 </script>
 </head>
 <body>

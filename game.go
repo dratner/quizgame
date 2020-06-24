@@ -16,7 +16,7 @@ const (
 	StateSetup        = "setup"
 	StateTemp         = "temp"
 	StatePoseQuestion = "pose"
-	StateOfferAnsers  = "answer"
+	StateOfferAnswers = "answer"
 	StateShowResults  = "show"
 	StateFinal        = "final"
 	ReqTypeJoin       = "join"
@@ -24,6 +24,8 @@ const (
 	ReqTypePoll       = "poll"
 	ReqTypeEnd        = "end"
 	ReqTypeTimeout    = "timeout"
+	ReqTypeSubmit     = "submit"
+	ReqTypeAnswer     = "answer"
 )
 
 type Player struct {
@@ -34,8 +36,8 @@ type Player struct {
 }
 
 type Answer struct {
-	AnswerID int
-	Answer   string
+	User   string
+	Answer string
 }
 
 type Question struct {
@@ -43,6 +45,7 @@ type Question struct {
 	Summary string
 	First   string
 	Last    string
+	Answers []Answer
 }
 
 func PlayGame(ch chan PlayerReq, id string, accesscode string) {
@@ -80,6 +83,12 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
 			req.RespChan <- presp
 			break
+		case ReqTypeAnswer:
+			log.Printf("Starting game %s", g.AccessCode)
+			g.Submit(req.Xid, req.Payload)
+			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
+			req.RespChan <- presp
+			break
 		case ReqTypeTimeout:
 			log.Printf("Question timeout for game %s", g.AccessCode)
 			break
@@ -96,17 +105,6 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 	}
 }
 
-/*
-type Game struct {
-	Xid             string
-	GameID          int         `json:GameID`
-	AccessCode      string      `json:AccessCode`
-	Players         []*Player   `json:Players`
-	Questions       []*Question `json:Questions`
-	State           string      `json:State`
-	CurrentQuestion *Question
-}*/
-
 type Game struct {
 	Xid             string
 	GameID          int
@@ -115,6 +113,31 @@ type Game struct {
 	Questions       []Question
 	State           string
 	CurrentQuestion Question
+}
+
+func (g *Game) Submit(id, payload string) {
+
+	log.Printf("Submitting answer.")
+
+	// No duplicates.
+	for _, a := range g.CurrentQuestion.Answers {
+		if a.User == id {
+			return
+		}
+	}
+
+	log.Printf("Not a duplicate.")
+
+	a := Answer{User: id, Answer: payload}
+	g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, a)
+
+	log.Printf("We've got %d total answers.", len(g.CurrentQuestion.Answers))
+
+	// Do we have all the answers?
+	if len(g.CurrentQuestion.Answers) == len(g.Players) {
+		log.Printf("We've got all the answers.")
+		g.State = StateOfferAnswers
+	}
 }
 
 func (g *Game) GetScores() string {
@@ -139,7 +162,25 @@ func (g *Game) GetTimer() string {
 func (g *Game) ShowGame(token string) string {
 	switch g.State {
 	case StatePoseQuestion:
-		return fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>", g.CurrentQuestion.Summary)
+		html := fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>", g.CurrentQuestion.Summary) +
+			`	<p><textarea id="submission" placeholder="Your sentence" rows="6" cols="40"></textarea></p>
+				<p><button onclick="submitGame()">Join Game!</button></p>
+			`
+		return html
+	case StateOfferAnswers:
+		html := `
+				Answer List
+		`
+		//for _,a := range (g.CurrentQuestion.Answers) {
+
+		//}
+		return html
+	case StateShowResults:
+		html := `
+				Results List
+		`
+
+		return html
 	default:
 		return ""
 	}
@@ -206,4 +247,9 @@ func (g *Game) PlayQuestion() error {
 	g.State = StatePoseQuestion
 	log.Printf("Posing question %s. %d questions remaining.", g.CurrentQuestion.Xid, len(g.Questions))
 	return nil
+}
+
+func Timeout(ch chan PlayerReq, id string) {
+	req := PlayerReq{RequestType: "Timeout", Payload: id}
+	ch <- req
 }
