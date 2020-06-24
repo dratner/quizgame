@@ -12,8 +12,8 @@ var state = "";
 function leaveGame() {
 	acode.innerHTML = "";
 	game.innerHTML = ""; 
-	score.innerHTML = "";
-	time.innerHTML = "";
+	scores.innerHTML = "";
+	timer.innerHTML = "";
 	xid = "";
 	accesscode = "";
 	clearInterval(pollIntervalID);
@@ -25,7 +25,6 @@ function sendReq(url, data, doneFunc) {
 	xhr.setRequestHeader("Content-Type", "application/json");
 	xhr.onreadystatechange = function () {
     	if (xhr.readyState === 4 && xhr.status === 200) {
-   //alert (xhr.responseText) 		
         	var json = JSON.parse(xhr.responseText);
         	if (state != json.State) {
         	    state = json.State;
@@ -38,6 +37,15 @@ function sendReq(url, data, doneFunc) {
 	};
 
    xhr.send(data);
+}
+
+function endGame() {
+	alert("end");
+	doneFunc = function(data) { 
+		alert("Done!");
+		leaveGame(); 
+	}
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "RequestType": "end" }),doneFunc);
 }
 
 function newGame() {
@@ -68,6 +76,11 @@ function joinGame() {
         	clearInterval(pollIntervalID);
         }	
         pollIntervalID = setInterval(pollGame, 2000);
+
+        game.innerHTML = `
+        	<p>Is everyone here?</p>
+			<button onclick="startGame()">Start Game!</button> 
+			`;
 	}
 
 	sendReq("/req",JSON.stringify({ "AccessCode": acode.value, "Payload": name.value, "RequestType": "join" }),doneFunc);
@@ -78,20 +91,9 @@ function pollGame() {
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "RequestType": "poll" }),doneFunc);
 }
 
-// DONE TO HERE
-
 function startGame() {
-	var xhr = new XMLHttpRequest();
-	var url = "/start";
-
-	xhr.open("POST", url, true);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.onreadystatechange = function () {
-    	if (xhr.readyState === 4 && xhr.status === 200) {}
-	};
-
-   var data = JSON.stringify({ "AccessCode": accesscode, "Xid": xid }); 
-   xhr.send(data);
+	doneFunc = function(data) {};
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": xid, "RequestType": "start" }),doneFunc);
 }
 
 </script>
@@ -102,11 +104,8 @@ function startGame() {
 <p class="topmenu">
 	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
-    <a href="javascript:scoreGame();">Score Game</a>&nbsp;&nbsp;&nbsp;
-    <a href="javascript:pollGame();">Poll Game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:leaveGame();">Leave Game</a>
-	<a href="javascript:readPayload();">Payload</a>
-
+	<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
+	<a href="javascript:endGame();">End For All</a>
 </p>
 <h3>Players</h3>
 <div class="scoresview" id="scores"></div>

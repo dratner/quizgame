@@ -14,7 +14,7 @@ import (
 //The form for State is enum+(Question Xid)
 const (
 	StateSetup        = "setup"
-	StateJoined       = "joined"
+	StateTemp         = "temp"
 	StatePoseQuestion = "pose"
 	StateOfferAnsers  = "answer"
 	StateShowResults  = "show"
@@ -49,57 +49,72 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 	var presp PlayerResp
 
-	g := &Game{Xid: id, AccessCode: accesscode, State: StateJoined}
+	g := &Game{Xid: id, AccessCode: accesscode, State: StateSetup}
 
 	for {
 		req := <-ch
 
+		presp = PlayerResp{}
+
 		switch req.RequestType {
 		case ReqTypeJoin:
-			log.Printf("Adding player to game %s", g.AccessCode)
+			log.Printf("Adding player %s to game %s", req.Payload, g.AccessCode)
 			p, err := g.AddPlayer(req.Payload)
 			if err != nil {
 				log.Printf("Error: %s", err)
 			} else {
-				file, _ := ioutil.ReadFile("wwwroot/startgame.html")
-				presp = PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: string(file), State: StateJoined, Payload: p.Xid}
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: p.Xid}
 				req.RespChan <- presp
 			}
 			break
 		case ReqTypePoll:
 			log.Printf("Polling game %s", g.AccessCode)
 			if g.CheckPermission(req.Xid) {
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Xid), State: g.State, Payload: ""}
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Xid), State: g.GetState(), Payload: ""}
 				req.RespChan <- presp
 			}
 			break
 		case ReqTypeStart:
 			log.Printf("Starting game %s", g.AccessCode)
 			g.Start()
+			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
+			req.RespChan <- presp
 			break
 		case ReqTypeTimeout:
 			log.Printf("Question timeout for game %s", g.AccessCode)
 			break
 		case ReqTypeEnd:
 			log.Printf("Ending game %s", g.AccessCode)
+			presp = PlayerResp{}
+			req.RespChan <- presp
 			return
 		default:
 			log.Printf("Unidentified request.")
 			break
 		}
-		presp = PlayerResp{}
 		close(req.RespChan)
 	}
 }
 
+/*
 type Game struct {
 	Xid             string
-	GameID          int         `json:GameID sql:game_id`
-	AccessCode      string      `json:AccessCode sql:access_code`
-	Players         []*Player   `json:Players sql:players`
-	Questions       []*Question `json:Questions sql:questions`
-	State           string      `json:State sql:state`
+	GameID          int         `json:GameID`
+	AccessCode      string      `json:AccessCode`
+	Players         []*Player   `json:Players`
+	Questions       []*Question `json:Questions`
+	State           string      `json:State`
 	CurrentQuestion *Question
+}*/
+
+type Game struct {
+	Xid             string
+	GameID          int
+	AccessCode      string
+	Players         []*Player
+	Questions       []Question
+	State           string
+	CurrentQuestion Question
 }
 
 func (g *Game) GetScores() string {
@@ -111,7 +126,7 @@ func (g *Game) GetScores() string {
 }
 
 func (g *Game) GetState() string {
-	if g.CurrentQuestion == nil {
+	if g.CurrentQuestion.Xid == "" {
 		return StateSetup
 	}
 	return g.State + g.CurrentQuestion.Xid
@@ -138,13 +153,15 @@ func (g *Game) FromFile(f string) error {
 		return err
 	}
 
-	err = json.Unmarshal([]byte(file), &g)
+	err = json.Unmarshal([]byte(file), &g.Questions)
 
 	if err != nil {
 		return err
 	}
 
+	log.Println("reading")
 	for _, q := range g.Questions {
+		log.Println("quesion")
 		q.Xid = xid.New().String()
 	}
 
@@ -173,38 +190,20 @@ func (g *Game) AddPlayer(name string) (*Player, error) {
 	return p, nil
 }
 
-func (g *Game) Setup() error {
-	return g.Play()
-}
-
-func (g *Game) PlayQuestion(q *Question) error {
-	g.State = StatePoseQuestion
-	return nil
-}
-
 func (g *Game) Start() {
 	err := g.FromFile("games/g1.json")
 	if err != nil {
 		log.Printf("Error: %s", err)
 		return
 	}
-	log.Printf("Game file loaded.")
+	log.Printf("Game file loaded with %d questions.", len(g.Questions))
+	_ = g.PlayQuestion()
 }
 
-func (g *Game) Play() error {
-	var err error
-
-	for _, q := range g.Questions {
-		g.CurrentQuestion = q
-		err = g.PlayQuestion(q)
-	}
-
-	return err
-}
-
-type PlayerAnswer struct {
-	GameID     int
-	QuestionID int
-	AnswerID   int
-	PlayerID   int
+func (g *Game) PlayQuestion() error {
+	g.CurrentQuestion = g.Questions[0]
+	g.Questions = g.Questions[1:]
+	g.State = StatePoseQuestion
+	log.Printf("Posing question %s. %d questions remaining.", g.CurrentQuestion.Xid, len(g.Questions))
+	return nil
 }

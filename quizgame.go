@@ -99,11 +99,6 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, ok := Games[preq.AccessCode]; !ok {
-		log.Printf("HERE")
-		for a, _ := range Games {
-			log.Printf("AC: %s", a)
-		}
-		log.Printf("PREQ %v", preq)
 		log.Printf("Error: Game with access code %s does not exist.", preq.AccessCode)
 		http.Error(w, fmt.Sprintf("Error: Game with access code %s does not exist.", preq.AccessCode), http.StatusInternalServerError)
 		return
@@ -119,19 +114,21 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	presp = <-preq.RespChan
 
-	if presp.State != "" {
-		jsonOut, err := json.Marshal(presp)
-
-		if err != nil {
-			log.Printf("Error: %s", err)
-			http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		log.Printf("Handler successful.")
-
-		w.Write(jsonOut)
+	if preq.RequestType == ReqTypeEnd {
+		delete(Games, preq.AccessCode)
 	}
+
+	jsonOut, err := json.Marshal(presp)
+
+	if err != nil {
+		log.Printf("Error: %s", err)
+		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Handler successful.")
+
+	w.Write(jsonOut)
 
 	log.Println("Request complete.")
 }
@@ -146,22 +143,31 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
+	/*===DEBUG=====*/
 	/*
-	   	g := new(Game)
-	   	q1 := new(Question)
-	   	q1.Summary = "This was a great book."
-	   	q1.First = "In the beginning..."
-	   	q1.Last = "...The end."
-	   	q2 := new(Question)
-	   	q2.Summary = "This was also great book."
-	   	q2.First = "In the beginning..."
-	   	q2.Last = "...The end."
-	   	g.Questions = append(g.Questions,q1)
-	   	g.Questions = append(g.Questions,q2)
+
+		   	g := Game{}
+		   	q1 := Question{Summary:"Book1 This was a great book.", First:"In the beginning...", Last:"The End" }
+		 	q2 := Question{Summary:"Book2 This was also a great book.", First:"In the beginning...", Last:"The End" }
+		   	g.Questions = append(g.Questions,q1)
+		   	g.Questions = append(g.Questions,q2)
+
+		   	file, _ := json.MarshalIndent(g.Questions, "", " ")
+			_ = ioutil.WriteFile("games/g2.json", file, 0644)
 
 
-	   	jsonOut, _ := json.Marshal(g.Questions)
-	   	fmt.Printf("%s",string(jsonOut))
-	   return
+		   	g2 := Game{}
+			file2, err := ioutil.ReadFile("games/g2.json")
+
+			if err != nil { log.Printf("%s",err)}
+
+			err = json.Unmarshal([]byte(file2), &g2.Questions)
+
+			if err != nil { log.Printf("%s",err)}
+
+			log.Printf("How many questions %d",len(g2.Questions))
+
+		   return
+
 	*/
 }
