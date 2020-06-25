@@ -7,8 +7,9 @@ import (
 	"github.com/rs/xid"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"strconv"
-	//	"strings"
+	"time"
 )
 
 //The form for State is enum+(Question Xid)
@@ -26,6 +27,7 @@ const (
 	ReqTypeTimeout    = "timeout"
 	ReqTypeSubmit     = "submit"
 	ReqTypeAnswer     = "answer"
+	CorrectAnswer     = "correct"
 )
 
 type Player struct {
@@ -40,90 +42,63 @@ type Answer struct {
 	Answer string
 }
 
-type Question struct {
-	Xid     string
-	Summary string
-	First   string
-	Last    string
-	Answers []Answer
-}
-
-func PlayGame(ch chan PlayerReq, id string, accesscode string) {
-
-	var presp PlayerResp
-
-	g := &Game{Xid: id, AccessCode: accesscode, State: StateSetup}
-
-	for {
-		req := <-ch
-
-		presp = PlayerResp{}
-
-		switch req.RequestType {
-		case ReqTypeJoin:
-			log.Printf("Adding player %s to game %s", req.Payload, g.AccessCode)
-			p, err := g.AddPlayer(req.Payload)
-			if err != nil {
-				log.Printf("Error: %s", err)
-			} else {
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: p.Xid}
-				req.RespChan <- presp
-			}
-			break
-		case ReqTypePoll:
-			log.Printf("Polling game %s", g.AccessCode)
-			if g.CheckPermission(req.Xid) {
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Xid), State: g.GetState(), Payload: ""}
-				req.RespChan <- presp
-			}
-			break
-		case ReqTypeStart:
-			log.Printf("Starting game %s", g.AccessCode)
-			g.Start()
-			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
-			req.RespChan <- presp
-			break
-		case ReqTypeAnswer:
-			log.Printf("Starting game %s", g.AccessCode)
-			g.Submit(req.Xid, req.Payload)
-			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
-			req.RespChan <- presp
-			break
-		case ReqTypeTimeout:
-			log.Printf("Question timeout for game %s", g.AccessCode)
-			break
-		case ReqTypeEnd:
-			log.Printf("Ending game %s", g.AccessCode)
-			presp = PlayerResp{}
-			req.RespChan <- presp
-			return
-		default:
-			log.Printf("Unidentified request.")
-			break
-		}
-		close(req.RespChan)
-	}
-}
-
 type Game struct {
 	Xid             string
 	GameID          int
 	AccessCode      string
-	Players         []*Player
+	Players         map[string]*Player
 	Questions       []Question
 	State           string
 	CurrentQuestion Question
 }
 
+func (g *Game) ScoreQuestion() {
+	// Get correct answer id.
+	var correct int
+	for id, answer := range g.CurrentQuestion.Answers {
+		if answer.User == CorrectAnswer {
+			correct = id
+		}
+	}
+	for uid, guess := range g.CurrentQuestion.Guesses {
+		if guess == correct {
+			// Give everyone a point who got it right...
+			g.Players[uid].Score++
+		} else {
+			// Give everyone a point who fooled someone...
+			g.Players[g.CurrentQuestion.Answers[guess].User].Score++
+		}
+	}
+}
+
+func (g *Game) Answer(id, payload string) {
+	if g.CurrentQuestion.HasAnswered(id) {
+		log.Printf("User already submitted this answer.")
+		return
+	}
+
+	log.Printf("Not a duplicate.")
+
+	val, err := strconv.Atoi(payload)
+	if err != nil {
+		return
+	}
+
+	g.CurrentQuestion.Guesses[id] = val
+
+	// Do we have all the answers?
+	if len(g.CurrentQuestion.Guesses) == len(g.Players) {
+		log.Printf("We've got all the guesses.")
+		g.CloseGuessSubmissions()
+	}
+}
+
 func (g *Game) Submit(id, payload string) {
 
-	log.Printf("Submitting answer.")
-
 	// No duplicates.
-	for _, a := range g.CurrentQuestion.Answers {
-		if a.User == id {
-			return
-		}
+	if g.CurrentQuestion.HasSubmitted(id) {
+		log.Printf("User already answered this question.")
+		return
 	}
 
 	log.Printf("Not a duplicate.")
@@ -136,8 +111,24 @@ func (g *Game) Submit(id, payload string) {
 	// Do we have all the answers?
 	if len(g.CurrentQuestion.Answers) == len(g.Players) {
 		log.Printf("We've got all the answers.")
-		g.State = StateOfferAnswers
+		g.CloseQuestionSubmissions()
 	}
+}
+
+func (g *Game) CloseQuestionSubmissions() {
+	if !g.CurrentQuestion.HasSubmitted(CorrectAnswer) {
+		ca := Answer{User: CorrectAnswer, Answer: g.CurrentQuestion.First}
+		g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, ca)
+
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(g.CurrentQuestion.Answers), func(i, j int) {
+			g.CurrentQuestion.Answers[i], g.CurrentQuestion.Answers[j] = g.CurrentQuestion.Answers[j], g.CurrentQuestion.Answers[i]
+		})
+	}
+	g.State = StateOfferAnswers
+}
+
+func (g *Game) CloseGuessSubmissions() {
 }
 
 func (g *Game) GetScores() string {
@@ -150,7 +141,7 @@ func (g *Game) GetScores() string {
 
 func (g *Game) GetState() string {
 	if g.CurrentQuestion.Xid == "" {
-		return StateSetup
+		return g.State
 	}
 	return g.State + g.CurrentQuestion.Xid
 }
@@ -160,23 +151,31 @@ func (g *Game) GetTimer() string {
 }
 
 func (g *Game) ShowGame(token string) string {
+
+	var html string
+
 	switch g.State {
 	case StatePoseQuestion:
-		html := fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>", g.CurrentQuestion.Summary) +
-			`	<p><textarea id="submission" placeholder="Your sentence" rows="6" cols="40"></textarea></p>
-				<p><button onclick="submitGame()">Join Game!</button></p>
+		if g.CurrentQuestion.HasSubmitted(token) {
+			html = "Waiting for others to submit their sentences."
+		} else {
+			html = fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>", g.CurrentQuestion.Summary) +
+				`	<p><textarea id="submission" placeholder="Your sentence" rows="6" cols="40"></textarea></p>
+				<p><button onclick="submitGame()">Submit!</button></p>
 			`
+		}
 		return html
 	case StateOfferAnswers:
-		html := `
+		html = `
 				Answer List
 		`
-		//for _,a := range (g.CurrentQuestion.Answers) {
-
-		//}
+		for v, a := range g.CurrentQuestion.Answers {
+			html += fmt.Sprintf(`<p><input type="radio" name="answer" value="%d">&nbsp;%s</p>`, v, a.Answer)
+		}
+		html += `<p><button onclick="answerGame()">Guess!</button></p>`
 		return html
 	case StateShowResults:
-		html := `
+		html = `
 				Results List
 		`
 
@@ -227,7 +226,7 @@ func (g *Game) AddPlayer(name string) (*Player, error) {
 		}
 	}
 	p := &Player{Xid: xid.New().String(), Name: name, AccessCode: g.AccessCode}
-	g.Players = append(g.Players, p)
+	g.Players[p.Xid] = p
 	return p, nil
 }
 
@@ -243,13 +242,11 @@ func (g *Game) Start() {
 
 func (g *Game) PlayQuestion() error {
 	g.CurrentQuestion = g.Questions[0]
+	g.CurrentQuestion.Guesses = make(map[string]int)
 	g.Questions = g.Questions[1:]
 	g.State = StatePoseQuestion
 	log.Printf("Posing question %s. %d questions remaining.", g.CurrentQuestion.Xid, len(g.Questions))
 	return nil
 }
 
-func Timeout(ch chan PlayerReq, id string) {
-	req := PlayerReq{RequestType: "Timeout", Payload: id}
-	ch <- req
-}
+

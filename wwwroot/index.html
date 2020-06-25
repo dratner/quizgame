@@ -40,9 +40,7 @@ function sendReq(url, data, doneFunc) {
 }
 
 function endGame() {
-	alert("end");
 	doneFunc = function(data) { 
-		alert("Done!");
 		leaveGame(); 
 	}
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "RequestType": "end" }),doneFunc);
@@ -59,8 +57,9 @@ function newGame() {
 function joinGame() {
 	
 	let name = document.querySelector('#name'); 
-    let acode = document.querySelector('#accesscode');
-	
+    let code = document.querySelector('#accesscode');
+
+
 	if (name == null || accesscode == null) {
 		game.innerHTML = `
 			<input type="text" id="name" placeholder="Your name">
@@ -68,7 +67,10 @@ function joinGame() {
 			<button onclick="joinGame()">Join Game!</button>
 			`;
 		return;
-	} 
+	} else {
+		    accesscode = code.value
+		    acode.innerHTML = accesscode
+	}
 
 	doneFunc = function(data) {
 		xid = data;
@@ -83,7 +85,7 @@ function joinGame() {
 			`;
 	}
 
-	sendReq("/req",JSON.stringify({ "AccessCode": acode.value, "Payload": name.value, "RequestType": "join" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": name.value, "RequestType": "join" }),doneFunc);
 }
 
 function pollGame() {
@@ -97,8 +99,21 @@ function startGame() {
 }
 
 function submitGame() {
+	submission = document.getElementById("submission").value
+
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": xid, "RequestType": "answer" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": submission, "RequestType": "submit" }),doneFunc);
+}
+
+function answerGame() {
+	answer = document.querySelector('input[name="answer"]:checked').value
+
+	doneFunc = function(data) {};
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": answer, "RequestType": "submit" }),doneFunc);
+}
+
+function varDump() {
+	alert ( "state: "+state+" xid: "+xid+" ac: " + accesscode )
 }
 
 </script>
@@ -110,7 +125,8 @@ function submitGame() {
 	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:endGame();">End For All</a>
+	<a href="javascript:endGame();">End For All</a>&nbsp;&nbsp;&nbsp;
+	<a href="javascript:varDump();">Status</a>
 </p>
 <h3>Players</h3>
 <div class="scoresview" id="scores"></div>
