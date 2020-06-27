@@ -25,6 +25,7 @@ func (q *Question) HasSubmitted(id string) bool {
 }
 
 func (q *Question) HasAnswered(id string) bool {
+	log.Printf("Guesses :%v", q.Guesses)
 	if _, ok := q.Guesses[id]; ok {
 		return true
 	}

@@ -85,7 +85,7 @@ type reqHandler struct {
 
 func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	log.Printf("Req handler.")
+	//log.Printf("Req handler.")
 
 	decoder := json.NewDecoder(r.Body)
 
@@ -104,7 +104,7 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Handling %s request to game %s.", preq.RequestType, preq.AccessCode)
+	//log.Printf("Handling %s request to game %s.", preq.RequestType, preq.AccessCode)
 
 	preq.RespChan = make(chan PlayerResp)
 
@@ -126,11 +126,7 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Handler successful.")
-
 	w.Write(jsonOut)
-
-	log.Println("Request complete.")
 }
 
 func main() {
@@ -142,32 +138,4 @@ func main() {
 	http.Handle("/req", new(reqHandler))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
-
-	/*===DEBUG=====*/
-	/*
-
-		   	g := Game{}
-		   	q1 := Question{Summary:"Book1 This was a great book.", First:"In the beginning...", Last:"The End" }
-		 	q2 := Question{Summary:"Book2 This was also a great book.", First:"In the beginning...", Last:"The End" }
-		   	g.Questions = append(g.Questions,q1)
-		   	g.Questions = append(g.Questions,q2)
-
-		   	file, _ := json.MarshalIndent(g.Questions, "", " ")
-			_ = ioutil.WriteFile("games/g2.json", file, 0644)
-
-
-		   	g2 := Game{}
-			file2, err := ioutil.ReadFile("games/g2.json")
-
-			if err != nil { log.Printf("%s",err)}
-
-			err = json.Unmarshal([]byte(file2), &g2.Questions)
-
-			if err != nil { log.Printf("%s",err)}
-
-			log.Printf("How many questions %d",len(g2.Questions))
-
-		   return
-
-	*/
 }

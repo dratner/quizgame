@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Quiz Game</title>
+<title>Famous Firsts</title>
 <script type="text/javascript">
 
 var xid = "";
@@ -109,28 +109,37 @@ function answerGame() {
 	answer = document.querySelector('input[name="answer"]:checked').value
 
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": answer, "RequestType": "submit" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": answer, "RequestType": "answer" }),doneFunc);
+}
+
+function nextGame() {
+	doneFunc = function(data) {};
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": "", "RequestType": "next" }),doneFunc);
 }
 
 function varDump() {
 	alert ( "state: "+state+" xid: "+xid+" ac: " + accesscode )
 }
 
+function rules() {
+	alert(`This is a literary quiz game. In each round, the players will be presented with the summary of a book, well known or otherwise. Each player will then write the first sentence of that book as she might imagine it to be. Once each player has submitted a suggestion, all the players will be able to guess the real first sentence from a list including all the suggested sentences and, of course, the real one. You get a point for getting the real one and a point for fooling another player. Play continues until all the books have been written and then the person with the highest score wins. Enjoy!`)
+}
+
 </script>
 </head>
 <body>
-<h1>Quiz game!</h1>
-<h5>version 6</h5>
+<h1>Famous Firsts</h1>
+<h5>version 7</h5>
 <p class="topmenu">
 	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
 	<a href="javascript:endGame();">End For All</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:varDump();">Status</a>
+	<a href="javascript:rules();">How To Play</a>&nbsp;&nbsp;&nbsp;
 </p>
 <h3>Players</h3>
 <div class="scoresview" id="scores"></div>
-<h3>Time</h3>
+<!-- <h3>Time</h3> -->
 <div class="timerview" id="timer"></div>
 <h3>Access Code</h3>
 <div class="acodeview" id="acode"></div>

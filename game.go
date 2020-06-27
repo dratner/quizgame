@@ -24,6 +24,7 @@ const (
 	ReqTypeStart      = "start"
 	ReqTypePoll       = "poll"
 	ReqTypeEnd        = "end"
+	ReqTypeNext       = "next"
 	ReqTypeTimeout    = "timeout"
 	ReqTypeSubmit     = "submit"
 	ReqTypeAnswer     = "answer"
@@ -52,8 +53,117 @@ type Game struct {
 	CurrentQuestion Question
 }
 
-func (g *Game) ScoreQuestion() {
-	// Get correct answer id.
+// === USER FUNCTIONS ===
+
+// Start a new game
+func (g *Game) Start() {
+	err := g.FromFile("games/g2.json")
+	if err != nil {
+		log.Printf("Error: %s", err)
+		return
+	}
+	log.Printf("Game file loaded with %d questions.", len(g.Questions))
+	g.PlayQuestion()
+}
+
+// Process a user submission of a potential answer
+func (g *Game) Submit(id, payload string) {
+
+	// No duplicates.
+	if g.CurrentQuestion.HasSubmitted(id) {
+		log.Printf("User already submitted a suggestion.")
+		return
+	}
+
+	log.Printf("Not a duplicate.")
+
+	a := Answer{User: id, Answer: payload}
+	g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, a)
+
+	log.Printf("We've got %d total submissions.", len(g.CurrentQuestion.Answers))
+
+	// Do we have all the answers? This is one way to change state.
+
+	log.Println("Submission recorded.")
+
+	if len(g.CurrentQuestion.Answers) == len(g.Players) {
+		log.Printf("We've got all the submissions.")
+		g.CloseQuestionSubmissions()
+	}
+}
+
+// Process a user guess at which submission is correct
+func (g *Game) Answer(id, payload string) {
+	if g.CurrentQuestion.HasAnswered(id) {
+		log.Printf("User already submitted an answer.")
+		return
+	}
+
+	log.Println("Not a duplicate.")
+
+	val, err := strconv.Atoi(payload)
+	if err != nil {
+		return
+	}
+
+	g.CurrentQuestion.Guesses[id] = val
+
+	log.Printf("We've got %d total answers.", len(g.CurrentQuestion.Guesses))
+
+	log.Println("Answer recorded.")
+
+	// Do we have all the answers?
+	if len(g.CurrentQuestion.Guesses) == len(g.Players) {
+		log.Printf("We've got all the answers.")
+		g.CloseGuessSubmissions()
+	} else {
+		log.Println("We're still waiting for more answers.")
+	}
+}
+
+// === UTIL FUNCTIONS ===
+
+func (g *Game) PlayQuestion() {
+
+	// If there are no more questions to be asked, we are done.
+	if len(g.Questions) == 0 {
+		log.Println("All questions have been asked.")
+		g.State = StateFinal
+		return
+	}
+
+	// Move the next question to current and play it.
+	g.CurrentQuestion = g.Questions[0]
+	g.CurrentQuestion.Guesses = make(map[string]int)
+	g.Questions = g.Questions[1:]
+	g.State = StatePoseQuestion
+	log.Printf("Posing question %s. %d questions remaining.", g.CurrentQuestion.Xid, len(g.Questions))
+}
+
+func (g *Game) CloseQuestionSubmissions() {
+
+	// We have all the submissions from users or we timed out.
+
+	if !g.CurrentQuestion.HasSubmitted(CorrectAnswer) {
+
+		// Add the correct answer to the list of possible answers.
+
+		ca := Answer{User: CorrectAnswer, Answer: g.CurrentQuestion.First}
+		g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, ca)
+
+		// Shuffle the answers.
+
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(g.CurrentQuestion.Answers), func(i, j int) {
+			g.CurrentQuestion.Answers[i], g.CurrentQuestion.Answers[j] = g.CurrentQuestion.Answers[j], g.CurrentQuestion.Answers[i]
+		})
+	}
+	g.State = StateOfferAnswers
+}
+
+func (g *Game) CloseGuessSubmissions() {
+
+	// Score the results
 	var correct int
 	for id, answer := range g.CurrentQuestion.Answers {
 		if answer.User == CorrectAnswer {
@@ -69,67 +179,10 @@ func (g *Game) ScoreQuestion() {
 			g.Players[g.CurrentQuestion.Answers[guess].User].Score++
 		}
 	}
+	g.State = StateShowResults
 }
 
-func (g *Game) Answer(id, payload string) {
-	if g.CurrentQuestion.HasAnswered(id) {
-		log.Printf("User already submitted this answer.")
-		return
-	}
-
-	log.Printf("Not a duplicate.")
-
-	val, err := strconv.Atoi(payload)
-	if err != nil {
-		return
-	}
-
-	g.CurrentQuestion.Guesses[id] = val
-
-	// Do we have all the answers?
-	if len(g.CurrentQuestion.Guesses) == len(g.Players) {
-		log.Printf("We've got all the guesses.")
-		g.CloseGuessSubmissions()
-	}
-}
-
-func (g *Game) Submit(id, payload string) {
-
-	// No duplicates.
-	if g.CurrentQuestion.HasSubmitted(id) {
-		log.Printf("User already answered this question.")
-		return
-	}
-
-	log.Printf("Not a duplicate.")
-
-	a := Answer{User: id, Answer: payload}
-	g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, a)
-
-	log.Printf("We've got %d total answers.", len(g.CurrentQuestion.Answers))
-
-	// Do we have all the answers?
-	if len(g.CurrentQuestion.Answers) == len(g.Players) {
-		log.Printf("We've got all the answers.")
-		g.CloseQuestionSubmissions()
-	}
-}
-
-func (g *Game) CloseQuestionSubmissions() {
-	if !g.CurrentQuestion.HasSubmitted(CorrectAnswer) {
-		ca := Answer{User: CorrectAnswer, Answer: g.CurrentQuestion.First}
-		g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, ca)
-
-		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(g.CurrentQuestion.Answers), func(i, j int) {
-			g.CurrentQuestion.Answers[i], g.CurrentQuestion.Answers[j] = g.CurrentQuestion.Answers[j], g.CurrentQuestion.Answers[i]
-		})
-	}
-	g.State = StateOfferAnswers
-}
-
-func (g *Game) CloseGuessSubmissions() {
-}
+// === THESE ARE DISPLAY FUNCS ===
 
 func (g *Game) GetScores() string {
 	payload := ""
@@ -147,7 +200,7 @@ func (g *Game) GetState() string {
 }
 
 func (g *Game) GetTimer() string {
-	return "3"
+	return ""
 }
 
 func (g *Game) ShowGame(token string) string {
@@ -159,26 +212,33 @@ func (g *Game) ShowGame(token string) string {
 		if g.CurrentQuestion.HasSubmitted(token) {
 			html = "Waiting for others to submit their sentences."
 		} else {
-			html = fmt.Sprintf("<p>%s</p><p>Your suggestion:</p>", g.CurrentQuestion.Summary) +
+			html = fmt.Sprintf("<p>%s</p><p>Your first sentence:</p>", g.CurrentQuestion.Summary) +
 				`	<p><textarea id="submission" placeholder="Your sentence" rows="6" cols="40"></textarea></p>
 				<p><button onclick="submitGame()">Submit!</button></p>
 			`
 		}
 		return html
 	case StateOfferAnswers:
-		html = `
+		if g.CurrentQuestion.HasAnswered(token) {
+			html = "Wait for other to make their guesses."
+		} else {
+			html = `
 				Answer List
 		`
-		for v, a := range g.CurrentQuestion.Answers {
-			html += fmt.Sprintf(`<p><input type="radio" name="answer" value="%d">&nbsp;%s</p>`, v, a.Answer)
+			for v, a := range g.CurrentQuestion.Answers {
+				html += fmt.Sprintf(`<p><input type="radio" name="answer" value="%d">&nbsp;%s</p>`, v, a.Answer)
+			}
+			html += `<p><button onclick="answerGame()">Guess!</button></p>`
 		}
-		html += `<p><button onclick="answerGame()">Guess!</button></p>`
 		return html
 	case StateShowResults:
-		html = `
-				Results List
-		`
-
+		html = fmt.Sprintf(`
+				<p>The correct answer was:<p><p>%s</p>
+				<p><button onclick="nextGame()">Next book!</button></p>
+		`, g.CurrentQuestion.First)
+		return html
+	case StateFinal:
+		html = `<p>And the winner is...</p><p><button onclick="endGame()">End Game</button></p>`
 		return html
 	default:
 		return ""
@@ -229,24 +289,3 @@ func (g *Game) AddPlayer(name string) (*Player, error) {
 	g.Players[p.Xid] = p
 	return p, nil
 }
-
-func (g *Game) Start() {
-	err := g.FromFile("games/g1.json")
-	if err != nil {
-		log.Printf("Error: %s", err)
-		return
-	}
-	log.Printf("Game file loaded with %d questions.", len(g.Questions))
-	_ = g.PlayQuestion()
-}
-
-func (g *Game) PlayQuestion() error {
-	g.CurrentQuestion = g.Questions[0]
-	g.CurrentQuestion.Guesses = make(map[string]int)
-	g.Questions = g.Questions[1:]
-	g.State = StatePoseQuestion
-	log.Printf("Posing question %s. %d questions remaining.", g.CurrentQuestion.Xid, len(g.Questions))
-	return nil
-}
-
-
