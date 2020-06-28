@@ -7,13 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"os"
+	"strings"
 )
 
 type Conf struct {
-	Addr string
+	Addr     string
 	GamePath string
+	LogFile  string
 }
 
 type PlayerReq struct {
@@ -142,14 +143,13 @@ func main() {
 		fmt.Println("Please include a configuration file (e.g. ./quizgame conf/conf.json)")
 		return
 	}
-	
+
 	f := os.Args[1]
 
 	file, err := ioutil.ReadFile(f)
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 
 	Config := Conf{}
@@ -157,8 +157,18 @@ func main() {
 	err = json.Unmarshal([]byte(file), &Config)
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalf("Error opening conf file %v", err)
+	}
+
+	if Config.LogFile != "" {
+		flog, err := os.OpenFile(Config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("Error opening log file: %v", err)
+		}
+		defer flog.Close()
+
+		log.SetOutput(flog)
+		log.Println("Log redirected.")
 	}
 
 	log.Println("Config loaded.")
@@ -170,7 +180,4 @@ func main() {
 	http.Handle("/req", new(reqHandler))
 
 	log.Fatal(http.ListenAndServe(Config.Addr, nil))
-
-
-	//log.Fatal(http.ListenAndServe(":80", nil))
 }
