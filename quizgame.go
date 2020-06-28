@@ -8,7 +8,13 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"os"
 )
+
+type Conf struct {
+	Addr string
+	GamePath string
+}
 
 type PlayerReq struct {
 	Xid         string
@@ -27,6 +33,7 @@ type PlayerResp struct {
 }
 
 var Games map[string]chan PlayerReq
+var Config Conf
 
 type htmlHandler struct {
 }
@@ -65,7 +72,7 @@ func (h *newHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	go PlayGame(ch, id, ac)
 
-	presp := &PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: fmt.Sprintf("You made a new game with access code %s. Invite your friends!", ac), State: StateSetup, Payload: ac}
+	presp := &PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: fmt.Sprintf("You made a new game with access code %s. Invite your friends! Click Join Game to continue.", ac), State: StateSetup, Payload: ac}
 
 	jsonOut, err := json.Marshal(presp)
 
@@ -131,11 +138,39 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
+	if len(os.Args) < 2 {
+		fmt.Println("Please include a configuration file (e.g. ./quizgame conf/conf.json)")
+		return
+	}
+	
+	f := os.Args[1]
+
+	file, err := ioutil.ReadFile(f)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	Config := Conf{}
+
+	err = json.Unmarshal([]byte(file), &Config)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	log.Println("Config loaded.")
+
 	Games = make(map[string]chan PlayerReq)
 
 	http.Handle("/", new(htmlHandler))
 	http.Handle("/new", new(newHandler))
 	http.Handle("/req", new(reqHandler))
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(Config.Addr, nil))
+
+
+	//log.Fatal(http.ListenAndServe(":80", nil))
 }
