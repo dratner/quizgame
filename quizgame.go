@@ -18,7 +18,7 @@ type Conf struct {
 }
 
 type PlayerReq struct {
-	Xid         string
+	Token       string
 	AccessCode  string
 	RequestType string
 	Payload     string

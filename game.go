@@ -261,8 +261,8 @@ func (g *Game) FromFile(f string) error {
 
 	log.Println("reading")
 	for _, q := range g.Questions {
-		log.Println("quesion")
 		q.Xid = xid.New().String()
+		log.Printf("Loading quesion %s",q.Xid)
 	}
 
 	return nil

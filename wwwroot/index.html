@@ -4,7 +4,7 @@
 <title>Famous Firsts</title>
 <script type="text/javascript">
 
-var xid = "";
+var token = "";
 var accesscode = "";
 var pollIntervalID;
 var state = "";
@@ -14,7 +14,7 @@ function leaveGame() {
 	game.innerHTML = ""; 
 	scores.innerHTML = "";
 	timer.innerHTML = "";
-	xid = "";
+	token = "";
 	accesscode = "";
 	clearInterval(pollIntervalID);
 }
@@ -43,7 +43,7 @@ function endGame() {
 	doneFunc = function(data) { 
 		leaveGame(); 
 	}
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "RequestType": "end" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "RequestType": "end" }),doneFunc);
 }
 
 function newGame() {
@@ -73,7 +73,7 @@ function joinGame() {
 	}
 
 	doneFunc = function(data) {
-		xid = data;
+		token = data;
         if (pollIntervalID != null) {
         	clearInterval(pollIntervalID);
         }	
@@ -90,35 +90,31 @@ function joinGame() {
 
 function pollGame() {
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "RequestType": "poll" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "RequestType": "poll" }),doneFunc);
 }
 
 function startGame() {
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": xid, "RequestType": "start" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": token, "RequestType": "start" }),doneFunc);
 }
 
 function submitGame() {
 	submission = document.getElementById("submission").value
 
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": submission, "RequestType": "submit" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "Payload": submission, "RequestType": "submit" }),doneFunc);
 }
 
 function answerGame() {
 	answer = document.querySelector('input[name="answer"]:checked').value
 
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": answer, "RequestType": "answer" }),doneFunc);
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "Payload": answer, "RequestType": "answer" }),doneFunc);
 }
 
 function nextGame() {
 	doneFunc = function(data) {};
-	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Xid": xid, "Payload": "", "RequestType": "next" }),doneFunc);
-}
-
-function varDump() {
-	alert ( "state: "+state+" xid: "+xid+" ac: " + accesscode )
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "Payload": "", "RequestType": "next" }),doneFunc);
 }
 
 function rules() {

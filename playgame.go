@@ -26,7 +26,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 		presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: ""}
 
 		if req.RequestType != ReqTypePoll {
-			log.Printf("Processing %s request for game %s and player %s.", req.RequestType, req.AccessCode, req.Xid)
+			log.Printf("Processing %s request for game %s and player %s.", req.RequestType, req.AccessCode, req.Token)
 		}
 
 		switch req.RequestType {
@@ -39,8 +39,8 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			}
 			break
 		case ReqTypePoll:
-			if g.CheckPermission(req.Xid) {
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Xid), State: g.GetState(), Payload: ""}
+			if g.CheckPermission(req.Token) {
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Token), State: g.GetState(), Payload: ""}
 			}
 			break
 		case ReqTypeStart:
@@ -48,11 +48,11 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
 			break
 		case ReqTypeSubmit:
-			g.Submit(req.Xid, req.Payload)
+			g.Submit(req.Token, req.Payload)
 			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
 			break
 		case ReqTypeAnswer:
-			g.Answer(req.Xid, req.Payload)
+			g.Answer(req.Token, req.Payload)
 			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
 			break
 		case ReqTypeNext:
