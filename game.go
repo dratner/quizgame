@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -51,6 +52,7 @@ type Game struct {
 	Questions       []Question
 	State           string
 	CurrentQuestion Question
+	finalHtml       string
 }
 
 // === USER FUNCTIONS ===
@@ -122,6 +124,38 @@ func (g *Game) Answer(id, payload string) {
 }
 
 // === UTIL FUNCTIONS ===
+
+func (g *Game) FinalResult() string {
+
+	m := make(map[string]int)
+
+	for _, p := range g.Players {
+		m[p.Name] = p.Score
+	}
+
+	type kv struct {
+		K string
+		V int
+	}
+
+	var ss []kv
+	for k, v := range m {
+		ss = append(ss, kv{k, v})
+	}
+
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].V > ss[j].V
+	})
+
+	html := fmt.Sprintf("<p><strong>The winner is %s!</strong></p><p>", ss[0].K)
+
+	for _, kv := range ss {
+		html += fmt.Sprintf("%s got %d points.<br />\n", kv.K, kv.V)
+	}
+
+	return html + "<br />"
+
+}
 
 func (g *Game) PlayQuestion() {
 
@@ -238,8 +272,10 @@ func (g *Game) ShowGame(token string) string {
 		`, g.CurrentQuestion.First)
 		return html
 	case StateFinal:
-		html = `<p>And the winner is...</p><p><button onclick="endGame()">End Game</button></p>`
-		return html
+		if g.finalHtml == "" {
+			g.finalHtml = g.FinalResult()
+		}
+		return g.finalHtml
 	default:
 		return ""
 	}
@@ -262,7 +298,7 @@ func (g *Game) FromFile(f string) error {
 	log.Println("reading")
 	for _, q := range g.Questions {
 		q.Xid = xid.New().String()
-		log.Printf("Loading quesion %s",q.Xid)
+		log.Printf("Loading quesion %s", q.Xid)
 	}
 
 	return nil
