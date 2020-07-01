@@ -59,12 +59,12 @@ type Game struct {
 
 // Start a new game
 func (g *Game) Start() {
-	err := g.FromFile("games/g2.json")
+	err := g.FromFile("games/g1.json")
 	if err != nil {
-		log.Printf("Error: %s", err)
+		log.Printf("[Game %s] Error: %s", g.AccessCode, err)
 		return
 	}
-	log.Printf("Game file loaded with %d questions.", len(g.Questions))
+	log.Printf("[Game %s] Game file loaded with %d questions.", g.AccessCode, len(g.Questions))
 	g.PlayQuestion()
 }
 
@@ -73,23 +73,23 @@ func (g *Game) Submit(id, payload string) {
 
 	// No duplicates.
 	if g.CurrentQuestion.HasSubmitted(id) {
-		log.Printf("User already submitted a suggestion.")
+		log.Printf("[Game %s] User already submitted a suggestion.", g.AccessCode)
 		return
 	}
 
-	log.Printf("Not a duplicate.")
+	log.Printf("[Game %s] Not a duplicate.", g.AccessCode)
 
 	a := Answer{User: id, Answer: payload}
 	g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, a)
 
-	log.Printf("We've got %d total submissions.", len(g.CurrentQuestion.Answers))
+	log.Printf("[Game %s] We've got %d total submissions.", g.AccessCode, len(g.CurrentQuestion.Answers))
 
 	// Do we have all the answers? This is one way to change state.
 
-	log.Println("Submission recorded.")
+	log.Printf("[Game %s] Submission recorded.", g.AccessCode)
 
 	if len(g.CurrentQuestion.Answers) == len(g.Players) {
-		log.Printf("We've got all the submissions.")
+		log.Printf("[Game %s] We've got all the submissions.", g.AccessCode)
 		g.CloseQuestionSubmissions()
 	}
 }
@@ -97,11 +97,11 @@ func (g *Game) Submit(id, payload string) {
 // Process a user guess at which submission is correct
 func (g *Game) Answer(id, payload string) {
 	if g.CurrentQuestion.HasAnswered(id) {
-		log.Printf("User already submitted an answer.")
+		log.Printf("[Game %s] User already submitted an answer.", g.AccessCode)
 		return
 	}
 
-	log.Println("Not a duplicate.")
+	log.Printf("[Game %s] Not a duplicate.", g.AccessCode)
 
 	val, err := strconv.Atoi(payload)
 	if err != nil {
@@ -110,16 +110,16 @@ func (g *Game) Answer(id, payload string) {
 
 	g.CurrentQuestion.Guesses[id] = val
 
-	log.Printf("We've got %d total answers.", len(g.CurrentQuestion.Answers))
+	log.Printf("[Game %s] We've got %d total answers.", g.AccessCode, len(g.CurrentQuestion.Answers))
 
-	log.Println("Answer recorded.")
+	log.Printf("[Game %s] Answer recorded.", g.AccessCode)
 
 	// Do we have all the answers?
 	if len(g.CurrentQuestion.Guesses) == len(g.Players) {
-		log.Printf("We've got all the answers.")
+		log.Printf("[Game %s] We've got all the answers.", g.AccessCode)
 		g.CloseGuessSubmissions()
 	} else {
-		log.Println("We're still waiting for more answers.")
+		log.Printf("[Game %s] We're still waiting for more answers.", g.AccessCode)
 	}
 }
 
@@ -161,7 +161,7 @@ func (g *Game) PlayQuestion() {
 
 	// If there are no more questions to be asked, we are done.
 	if len(g.Questions) == 0 {
-		log.Println("All questions have been asked.")
+		log.Printf("[Game %s] All questions have been asked.", g.AccessCode)
 		g.State = StateFinal
 		return
 	}
@@ -171,7 +171,7 @@ func (g *Game) PlayQuestion() {
 	g.CurrentQuestion.Guesses = make(map[string]int)
 	g.Questions = g.Questions[1:]
 	g.State = StatePoseQuestion
-	log.Printf("Posing question %s. %d questions remaining.", g.CurrentQuestion.Xid, len(g.Questions))
+	log.Printf("[Game %s] Posing question %s. %d questions remaining.", g.AccessCode, g.CurrentQuestion.Xid, len(g.Questions))
 }
 
 func (g *Game) CloseQuestionSubmissions() {
@@ -211,7 +211,7 @@ func (g *Game) CloseGuessSubmissions() {
 		} else {
 			// Give everyone a point who fooled someone...
 			if uid == g.CurrentQuestion.Answers[guess].User {
-				log.Printf("A user guessed their own answer. Lame-o.")
+				log.Printf("[Game %s] A user guessed their own answer. Lame-o.", g.AccessCode)
 			} else {
 				g.Players[g.CurrentQuestion.Answers[guess].User].Score++
 			}
@@ -299,10 +299,11 @@ func (g *Game) FromFile(f string) error {
 		return err
 	}
 
-	log.Println("reading")
+	log.Printf("[Game %s] Reading", g.AccessCode)
+
 	for _, q := range g.Questions {
 		q.Xid = xid.New().String()
-		log.Printf("Loading quesion %s", q.Xid)
+		log.Printf("[Game %s] Loading quesion %s", g.AccessCode, q.Xid)
 	}
 
 	return nil

@@ -1,14 +1,17 @@
 [
  {
-  "Xid": "",
-  "Summary": "Book1 This was a great book.",
-  "First": "In the beginning...",
+  "Summary": "\u003cp\u003e\u003cstrong\u003eRoughing It\u003c/strong\u003e\u003cbr /\u003eBy Mark Twain\u003cbr /\u003ePublished in 1872\u003c/p\u003e\u003cp\u003e“Roughing It” is a classic travelogue that documents Twain’s early days in the old wild west between the years 1861-1867. Employing his characteristically humoristic wit and flare for regional dialect, Twain crafts a story which at once explores the magnificence of the wild west and dispels its romanticized mythology. Called out west to help his brother, Orion, who has been appointed Secretary of Nevada, the two travel from their homes in Missouri aboard the Overland Stage. In relating the trip, the rugged brilliance of the open frontier of the American West is beautifully depicted. Parting ways with his brother, Twain continues on from Salt Lake City to San Francisco and ultimately the Kingdom of Hawaii. Along the way numerous anecdotes of humorous adventures and mishaps of Twain’s experiences with Mormons, Native Americans, mining, and real estate speculation are satirically told.\u003c/p\u003e",
+  "First": "My brother had just been appointed Secretary of the Nevada Territory-an office of such majesty that it concentrated in itself the duties and dignities of Treasurer, Comptroller, Secretary of State, and Acting Governor in the Governor's absence.",
   "Last": "The End"
  },
  {
-  "Xid": "",
-  "Summary": "Book2 This was also a great book.",
-  "First": "In the beginning...",
-  "Last": "The End"
+  "Summary": "\u003cp\u003e\u003cstrong\u003eThe Face In The Frost\u003c/strong\u003e\u003cbr /\u003eBy John Bellairs\u003cbr /\u003ePublished in 1969\u003c/p\u003e\u003cp\u003eProspero, a tall, skinny misfit of a wizard, lives in the South Kingdom—a patchwork of feuding duchies and small manors, all loosely loyal to one figurehead king. Along with his wizard friend Roger Bacon, who has been on a quest to find a mysterious book, Prospero must flee his home to escape ominous pursuers. Thus begins an adventure that will lead him to a grove where his old rival, Melichus, is falsely rumored to be buried and to a less-than-hospitable inn in the town of Five Dials—and ultimately into a dangerous battle with origins in a magical glass paperweight.\u003c/p\u003e",
+  "First": "Several centuries (or so) ago, in a country whose name doesn't matter, there was a tall, skinny, straggly-bearded old wizard named Prospero, and not the one you are thinking of, either.",
+  "Last": "The end"
+ },
+ {
+  "Summary": "\u003cp\u003e\u003cstrong\u003eInteresting Times\u003c/strong\u003e\u003cbr /\u003eBy Terry Pratchett\u003cbr /\u003ePublished in 1996\u003c/p\u003e\u003cp\u003eRincewind, Discworld's most incompetent wizard, finds himself transported to the Counterweight Continent, a mysterious place that few have visited and from which fewer have returned. Pratchett's uniquely biting commentary pillories the culture of medieval Chinese emperors while saving some humor for Cohen the Barbarian and his Silver Hoard of geriatric barbarians who are determined the raid the Counterweight Continent of its greatest treasure. Ninjas, revolutionaries, feudal lords, and an ancient prophesy come together in a story at once ridiculous and thrilling. \u003c/p\u003e",
+  "First": "This is where gods play games with the lives of men, on a board that is at one and the same time a simple playing area and the whole world.",
+  "Last": "The end"
  }
 ]
