@@ -110,7 +110,7 @@ func (g *Game) Answer(id, payload string) {
 
 	g.CurrentQuestion.Guesses[id] = val
 
-	log.Printf("We've got %d total answers.", len(g.CurrentQuestion.Guesses))
+	log.Printf("We've got %d total answers.", len(g.CurrentQuestion.Answers))
 
 	log.Println("Answer recorded.")
 
@@ -210,7 +210,11 @@ func (g *Game) CloseGuessSubmissions() {
 			g.Players[uid].Score++
 		} else {
 			// Give everyone a point who fooled someone...
-			g.Players[g.CurrentQuestion.Answers[guess].User].Score++
+			if uid == g.CurrentQuestion.Answers[guess].User {
+				log.Printf("A user guessed their own answer. Lame-o.")
+			} else {
+				g.Players[g.CurrentQuestion.Answers[guess].User].Score++
+			}
 		}
 	}
 	g.State = StateShowResults

@@ -1,9 +1,5 @@
 package main
 
-import (
-	"log"
-)
-
 type Question struct {
 	Xid     string
 	Summary string
@@ -15,8 +11,6 @@ type Question struct {
 
 func (q *Question) HasSubmitted(id string) bool {
 	for _, a := range q.Answers {
-		log.Printf("U %s", a.User)
-		log.Printf("A %s", a.Answer)
 		if a.User == id {
 			return true
 		}
@@ -25,7 +19,6 @@ func (q *Question) HasSubmitted(id string) bool {
 }
 
 func (q *Question) HasAnswered(id string) bool {
-	log.Printf("Guesses :%v", q.Guesses)
 	if _, ok := q.Guesses[id]; ok {
 		return true
 	}
