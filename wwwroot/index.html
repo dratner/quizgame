@@ -34,6 +34,9 @@ function sendReq(url, data, doneFunc) {
         	timer.innerHTML = json.TimerHtml;
         	doneFunc(json.Payload);
     	}
+    	if (xhr.readyState === 4 && xhr.status === 422) {
+        	leaveGame();
+    	}
 	};
 
    xhr.send(data);

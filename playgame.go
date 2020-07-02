@@ -2,16 +2,26 @@ package main
 
 import (
 	"log"
+	"time"
 )
 
 func Timeout(ch chan PlayerReq, id string) {
-	req := PlayerReq{RequestType: "Timeout", Payload: id}
+	time.Sleep(3 * time.Minute)
+	req := PlayerReq{RequestType: ReqTypeTimeout, Payload: id}
+	ch <- req
+}
+
+func TimeoutGame(ch chan PlayerReq) {
+	time.Sleep(24 * time.Hour)
+	req := PlayerReq{RequestType: ReqTypeEnd}
 	ch <- req
 }
 
 func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 	var presp PlayerResp
+
+	go TimeoutGame(ch)
 
 	p := make(map[string]*Player)
 	g := &Game{Xid: id, AccessCode: accesscode, State: StateSetup, Players: p}
@@ -25,14 +35,14 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 		presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: ""}
 
 		if req.RequestType != ReqTypePoll {
-			log.Printf("Processing %s request for game %s and player %s.", req.RequestType, req.AccessCode, req.Token)
+			log.Printf("[Game %s] Processing %s request.", g.AccessCode, req.RequestType)
 		}
 
 		switch req.RequestType {
 		case ReqTypeJoin:
 			p, err := g.AddPlayer(req.Payload)
 			if err != nil {
-				log.Printf("Error: %s", err)
+				log.Printf("[Game %s] Error: %s", g.AccessCode, err)
 			} else {
 				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: p.Xid}
 			}
@@ -73,7 +83,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			close(req.RespChan)
 			return
 		default:
-			log.Printf("Unidentified request.")
+			log.Printf("[Game %s] Unidentified request.", g.AccessCode)
 			break
 		}
 		req.RespChan <- presp

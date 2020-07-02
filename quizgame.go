@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type Conf struct {
@@ -33,8 +34,12 @@ type PlayerResp struct {
 	Payload   string
 }
 
-var Games map[string]chan PlayerReq
-var Config Conf
+type GameChan struct {
+	Ch      chan PlayerReq
+	Created time.Time
+}
+
+var Games map[string]GameChan
 
 type htmlHandler struct {
 }
@@ -69,11 +74,11 @@ func (h *newHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Games[ac] = ch
+	Games[ac] = GameChan{Ch: ch, Created: time.Now()}
 
 	go PlayGame(ch, id, ac)
 
-	presp := &PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: fmt.Sprintf("You made a new game with access code %s. Invite your friends! Click Join Game to continue.", ac), State: StateSetup, Payload: ac}
+	presp := &PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: fmt.Sprintf("You made a new game with access code %s. Invite your friends by sending them this code! Click Join Game to continue.", ac), State: StateSetup, Payload: ac}
 
 	jsonOut, err := json.Marshal(presp)
 
@@ -108,7 +113,7 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if _, ok := Games[preq.AccessCode]; !ok {
 		log.Printf("Error: Game with access code %s does not exist.", preq.AccessCode)
-		http.Error(w, fmt.Sprintf("Error: Game with access code %s does not exist.", preq.AccessCode), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error: Game with access code %s does not exist.", preq.AccessCode), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -116,7 +121,7 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	preq.RespChan = make(chan PlayerResp)
 
-	Games[preq.AccessCode] <- *preq
+	Games[preq.AccessCode].Ch <- *preq
 
 	var presp PlayerResp
 
@@ -173,7 +178,7 @@ func main() {
 
 	log.Println("Config loaded.")
 
-	Games = make(map[string]chan PlayerReq)
+	Games = make(map[string]GameChan)
 
 	http.Handle("/", new(htmlHandler))
 	http.Handle("/new", new(newHandler))
