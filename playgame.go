@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func Timeout(ch chan PlayerReq, id string) {
+func TimeoutQuestion(ch chan PlayerReq, id string) {
 	time.Sleep(3 * time.Minute)
 	req := PlayerReq{RequestType: ReqTypeTimeout, Payload: id}
 	ch <- req
@@ -75,7 +75,8 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			}
 			break
 		case ReqTypeTimeout:
-			//TODO
+			// Got to verify the xid, but those are working yet for some reason.
+			g.CloseGuessSubmissions()
 			break
 		case ReqTypeEnd:
 			presp = PlayerResp{}

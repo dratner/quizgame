@@ -303,9 +303,9 @@ func (g *Game) FromFile(f string) error {
 
 	log.Printf("[Game %s] Reading...", g.AccessCode)
 
-	for _, q := range g.Questions {
-		q.Xid = xid.New().String()
-		log.Printf("[Game %s] Loading quesion %s", g.AccessCode, q.Xid)
+	for i, _ := range g.Questions {
+		g.Questions[i].Xid = xid.New().String()
+		log.Printf("[Game %s] Loading quesion %s", g.AccessCode, g.Questions[i].Xid)
 	}
 
 	log.Printf("[Game %s] Shuffling...", g.AccessCode)
@@ -318,10 +318,10 @@ func (g *Game) FromFile(f string) error {
 	log.Printf("[Game %s] Cutting...", g.AccessCode)
 
 	if len(g.Questions) > 7 {
-		g.Questions = g.Questions[0:6]
+		g.Questions = g.Questions[0:7]
 	}
 
-	log.Printf("[Game %s] Questions Ready.", g.AccessCode)
+	log.Printf("[Game %s] %d questions Ready.", g.AccessCode, len(g.Questions))
 
 	return nil
 }
