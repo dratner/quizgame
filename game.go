@@ -287,6 +287,8 @@ func (g *Game) ShowGame(token string) string {
 
 func (g *Game) FromFile(f string) error {
 
+	log.Printf("[Game %s] Load questions from file.", g.AccessCode)
+
 	file, err := ioutil.ReadFile(f)
 
 	if err != nil {
@@ -299,12 +301,27 @@ func (g *Game) FromFile(f string) error {
 		return err
 	}
 
-	log.Printf("[Game %s] Reading", g.AccessCode)
+	log.Printf("[Game %s] Reading...", g.AccessCode)
 
 	for _, q := range g.Questions {
 		q.Xid = xid.New().String()
 		log.Printf("[Game %s] Loading quesion %s", g.AccessCode, q.Xid)
 	}
+
+	log.Printf("[Game %s] Shuffling...", g.AccessCode)
+
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(g.Questions), func(i, j int) {
+		g.Questions[i], g.Questions[j] = g.Questions[j], g.Questions[i]
+	})
+
+	log.Printf("[Game %s] Cutting...", g.AccessCode)
+
+	if len(g.Questions) > 7 {
+		g.Questions = g.Questions[0:6]
+	}
+
+	log.Printf("[Game %s] Questions Ready.", g.AccessCode)
 
 	return nil
 }

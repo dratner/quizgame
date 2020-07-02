@@ -18,11 +18,10 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 	for {
 
-		// A requests are serialized by the channel, so mutexs are not required.
+		// A requests are serialized by the channel, so mutex not required.
 
 		req := <-ch
 
-		//presp = PlayerResp{}
 		presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: ""}
 
 		if req.RequestType != ReqTypePoll {
