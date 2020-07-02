@@ -6,8 +6,8 @@ import (
 )
 
 func TimeoutQuestion(ch chan PlayerReq, id string) {
-	time.Sleep(3 * time.Minute)
-	req := PlayerReq{RequestType: ReqTypeTimeout, Payload: id}
+	time.Sleep(QuestionTimeout * time.Second)
+	req := PlayerReq{RequestType: ReqTypeTimeout, Payload: id, RespChan: make(chan PlayerResp, 2)}
 	ch <- req
 }
 
@@ -32,7 +32,8 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 		req := <-ch
 
-		presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: ""}
+		//presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: ""}
+		presp = PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: "", State: g.GetState(), Payload: ""}
 
 		if req.RequestType != ReqTypePoll {
 			log.Printf("[Game %s] Processing %s request.", g.AccessCode, req.RequestType)
@@ -54,6 +55,9 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypeStart:
 			g.Start()
+			if g.State == StatePoseQuestion {
+				go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
+			}
 			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
 			break
 		case ReqTypeSubmit:
@@ -68,6 +72,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			if g.State == StateShowResults {
 				g.PlayQuestion()
 				if g.State == StatePoseQuestion {
+					go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
 					presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Getting next question!", State: StateTemp, Payload: ""}
 				} else {
 					presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "All done!", State: StateTemp, Payload: ""}
@@ -75,8 +80,13 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			}
 			break
 		case ReqTypeTimeout:
-			// Got to verify the xid, but those are working yet for some reason.
-			g.CloseGuessSubmissions()
+			if g.State == StatePoseQuestion {
+				if g.CurrentQuestion.Xid == req.Payload {
+					log.Printf("[Game %s] Timeout for question %s", g.AccessCode, g.CurrentQuestion.Xid)
+					g.CloseQuestionSubmissions()
+					log.Printf("[Game %s] State %s", g.AccessCode, g.State)
+				}
+			}
 			break
 		case ReqTypeEnd:
 			presp = PlayerResp{}

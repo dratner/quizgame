@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 type Question struct {
 	Xid     string
 	Summary string
@@ -7,6 +11,7 @@ type Question struct {
 	Last    string
 	Answers []Answer
 	Guesses map[string]int
+	Posed   time.Time
 }
 
 func (q *Question) HasSubmitted(id string) bool {

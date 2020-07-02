@@ -30,6 +30,7 @@ const (
 	ReqTypeSubmit     = "submit"
 	ReqTypeAnswer     = "answer"
 	CorrectAnswer     = "correct"
+	QuestionTimeout   = 120
 )
 
 type Player struct {
@@ -169,8 +170,10 @@ func (g *Game) PlayQuestion() {
 	// Move the next question to current and play it.
 	g.CurrentQuestion = g.Questions[0]
 	g.CurrentQuestion.Guesses = make(map[string]int)
+	g.CurrentQuestion.Posed = time.Now()
 	g.Questions = g.Questions[1:]
 	g.State = StatePoseQuestion
+
 	log.Printf("[Game %s] Posing question %s. %d questions remaining.", g.AccessCode, g.CurrentQuestion.Xid, len(g.Questions))
 }
 
@@ -238,6 +241,16 @@ func (g *Game) GetState() string {
 }
 
 func (g *Game) GetTimer() string {
+	if g.State == StatePoseQuestion {
+		i := QuestionTimeout - int(time.Since(g.CurrentQuestion.Posed).Seconds())
+		if i < 0 {
+			i = 0
+		}
+		log.Printf("[Game %s] Timer showing %d seconds", g.AccessCode, i)
+
+		return fmt.Sprintf("%d seconds", i)
+	}
+
 	return ""
 }
 
