@@ -125,25 +125,101 @@ function rules() {
 }
 
 </script>
+<style>
+
+body {
+  background-color: linen;
+  margin: 40px;
+}
+
+a:visited {
+  color: maroon;
+}
+a:active {
+  color: maroon;
+}
+a:link {
+  color: maroon;
+}
+
+.wrapper {
+    display: grid;
+    grid-gap: 10px;
+        grid-template-columns: 25% 50% 25%;
+        grid-template-rows: 50px 60px 60px 100% 70px;
+        background-color: linen;
+    }
+
+    .box {
+        background-color: linen;
+        color: maroon;
+        border-radius: 5px;
+        padding: 10px;
+        font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    .a {
+    	grid-column: 1/4;
+    	grid-row: 1;
+    	font-size: 32px;
+    }
+    .b {
+        grid-column: 1 / 3;
+        grid-row: 2;
+    }
+    .c {
+        grid-column: 3;
+        grid-row: 2;
+    }
+    .d {
+        grid-column: 1 / 3;
+        grid-row: 3 ;
+    }
+    .e {
+        grid-column: 3;
+        grid-row: 3;
+    }
+    .f {
+    	grid-column: 1/4;
+    	grid-row: 4;
+    }
+    .g {
+    	grid-column: 1/4;
+    	grid-row: 5;
+    	font-size: 12px;
+    }
+</style>
 </head>
 <body>
-<h1>Famous Firsts</h1>
-<p class="topmenu">
-	<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
-	<a href="javascript:rules();">How To Play</a>&nbsp;&nbsp;&nbsp;
-</p>
-<h3>Players</h3>
-<div class="scoresview" id="scores">No other players yet.</div>
-<!-- <h3>Time</h3> -->
-<div class="timerview" id="timer"></div>
-<h3>Access Code</h3>
-<div class="acodeview" id="acode">Haven't joined a game.</div>
-<hr />
-<div class="gameview" id="game"></div>
-<hr />
-<p><h5><a href='https://docs.google.com/forms/d/1bXCNVe-bNdAvFdBKE_4MAGOswQSVLcg2ziAbXxrBRSw/edit'>Add Books</a></h5></p>
-<p><h5>Game code is &copy; 2020 Dan Ratner, All Rights Reserved. No personal data is collected by this app.</h5></p>
+<div class="wrapper">
+	<div class="box a">
+		<strong>Famous Firsts</strong>
+	</div>
+	<div class="box b">
+		<a href="javascript:newGame();">New Game</a>&nbsp;&nbsp;&nbsp;
+		<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
+		<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
+		<a href="javascript:rules();">How To Play</a>
+	</div>
+	<div class="box c">
+		<strong>Access Code:</strong>
+		<div class="acodeview" id="acode">Haven't joined a game.</div>
+	</div>
+	<div class="box d">
+		<strong>Players:</strong>
+		<div class="scoresview" id="scores">No other players yet.</div>
+	</div>
+	<div class="box e">
+		<strong>Time Remaining:</strong>
+		<div class="timerview" id="timer"></div>
+	</div>	
+	<div class="box f">
+		<div class="gameview" id="game"></div>
+	</div>
+	<div class="box g">
+		<p><a href='https://docs.google.com/forms/d/1bXCNVe-bNdAvFdBKE_4MAGOswQSVLcg2ziAbXxrBRSw/edit'>Add Books</a></p>
+		Hand coded and &copy; 2020 by Dan Ratner, All Rights Reserved. No personal data is collected by this game.
+	</div>	
+</div>	
 </body>
 </html>

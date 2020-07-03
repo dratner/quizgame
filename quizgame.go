@@ -78,7 +78,7 @@ func (h *newHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	go PlayGame(ch, id, ac)
 
-	presp := &PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: fmt.Sprintf("You made a new game with access code %s. Invite your friends by sending them this code! Click Join Game to continue.", ac), State: StateSetup, Payload: ac}
+	presp := &PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: fmt.Sprintf("You made a new game with access code <strong>%s</strong>.<br />Invite your friends by sending them this code!<br />Click Join Game to continue.", ac), State: StateSetup, Payload: ac}
 
 	jsonOut, err := json.Marshal(presp)
 

@@ -263,8 +263,8 @@ func (g *Game) ShowGame(token string) string {
 		if g.CurrentQuestion.HasSubmitted(token) {
 			html = "Waiting for others to submit their sentences."
 		} else {
-			html = fmt.Sprintf("<p>%s</p><p>Your first sentence:</p>", g.CurrentQuestion.Summary) +
-				`	<p><textarea id="submission" placeholder="Your sentence" rows="6" cols="80"></textarea></p>
+			html = fmt.Sprintf("<p>%s</p>", g.CurrentQuestion.Summary) +
+				`	<p><textarea id="submission" placeholder="Your first sentence" rows="6" cols="80"></textarea></p>
 				<p><button onclick="submitGame()">Submit!</button></p>
 			`
 		}
@@ -273,9 +273,8 @@ func (g *Game) ShowGame(token string) string {
 		if g.CurrentQuestion.HasAnswered(token) {
 			html = "Wait for other to make their guesses."
 		} else {
-			html = `
-				Answer List
-		`
+			html = "<strong>Your Choices:</strong>"
+
 			for v, a := range g.CurrentQuestion.Answers {
 				html += fmt.Sprintf(`<p><input type="radio" name="answer" value="%d">&nbsp;%s</p>`, v, a.Answer)
 			}
@@ -284,7 +283,8 @@ func (g *Game) ShowGame(token string) string {
 		return html
 	case StateShowResults:
 		html = fmt.Sprintf(`
-				<p>The correct answer was:<p><p>%s</p>
+				<strong>Correct Answer:</strong>
+				<p>%s</p>
 				<p><button onclick="nextGame()">Next book!</button></p>
 		`, g.CurrentQuestion.First)
 		return html
