@@ -256,12 +256,12 @@ func (g *Game) GetTimer() string {
 
 func (g *Game) ShowGame(token string) string {
 
-	var html string
+	var chtml, html string
 
 	switch g.State {
 	case StatePoseQuestion:
 		if g.CurrentQuestion.HasSubmitted(token) {
-			html = "Waiting for others to submit their sentences."
+			html = "Waiting for others to submit their sentences..."
 		} else {
 			html = fmt.Sprintf("<p>%s</p>", g.CurrentQuestion.Summary) +
 				`	<p><textarea id="submission" placeholder="Your first sentence" rows="6" cols="80"></textarea></p>
@@ -271,7 +271,7 @@ func (g *Game) ShowGame(token string) string {
 		return html
 	case StateOfferAnswers:
 		if g.CurrentQuestion.HasAnswered(token) {
-			html = "Wait for other to make their guesses."
+			html = "Waiting for others to make their guesses..."
 		} else {
 			html = "<strong>Your Choices:</strong>"
 
@@ -282,11 +282,22 @@ func (g *Game) ShowGame(token string) string {
 		}
 		return html
 	case StateShowResults:
-		html = fmt.Sprintf(`
-				<strong>Correct Answer:</strong>
-				<p>%s</p>
-				<p><button onclick="nextGame()">Next book!</button></p>
-		`, g.CurrentQuestion.First)
+		for aid, ans := range g.CurrentQuestion.Answers {
+			ghtml := "<p><em>Guessed By: "
+			for pxid, gid := range g.CurrentQuestion.Guesses {
+				if gid == aid {
+					ghtml += g.Players[pxid].Name + " "
+				}
+			}
+			ghtml += "</em></p>"
+			if ans.User == CorrectAnswer {
+				chtml = fmt.Sprintf("<strong>Correct Answer:</strong><p>%s<p>", ans.Answer) + ghtml
+			} else {
+				html = fmt.Sprintf("<strong>Suggestion From %s:</strong><p>%s</p>", g.Players[ans.User].Name, ans.Answer) + ghtml
+			}
+
+		}
+		html = chtml + html + `<p><button onclick="nextGame()">Next book!</button></p>`
 		return html
 	case StateFinal:
 		if g.finalHtml == "" {

@@ -82,7 +82,7 @@ function joinGame() {
         }	
         pollIntervalID = setInterval(pollGame, 2000);
 
-        game.innerHTML = `
+        game.innerHTML = `<p><strong>Ready To Start?</strong></p>
         	<p>Is everyone here?</p>
 			<button onclick="startGame()">Start Game!</button> 
 			`;
@@ -202,15 +202,15 @@ a:link {
 		<a href="javascript:rules();">How To Play</a>
 	</div>
 	<div class="box c">
-		<strong>Access Code:</strong>
+		<p><strong>Access Code:</strong></p>
 		<div class="acodeview" id="acode">Haven't joined a game.</div>
 	</div>
 	<div class="box d">
-		<strong>Players:</strong>
+		<p><strong>Players & Scores:</strong></p>
 		<div class="scoresview" id="scores">No other players yet.</div>
 	</div>
 	<div class="box e">
-		<strong>Time Remaining:</strong>
+		<p><strong>Time Remaining:</strong></p>
 		<div class="timerview" id="timer"></div>
 	</div>	
 	<div class="box f">
