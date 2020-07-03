@@ -1,28 +1,34 @@
 <!DOCTYPE html>
+<!-- 
+	This game is hand-written with a JavaScript front end and Golang backend. It does not use any external JavaScript or frameworks and it uses only one non-core Golang library (xid). I didn't observe any particular pattern in its design either, instead pushing for simplicity, performance, and legibility. In short, it is written in exactly the opposite way that most apps are written these days for better or for worse. I did this primarily to prove that it's still possible, though I also wanted to squeeze out every bit of performance. Enjoy. ~Dan (Github @dratner)
+--> 
 <html>
 <head>
 <title>Famous Firsts</title>
 <script type="text/javascript">
 
-var token = "";
-var accesscode = "";
+var token = ""; // User identifier
+var accesscode = ""; // Game identifier
 var pollIntervalID;
 var state = "";
 
 function initGame() {
-	acode.innerHTML = "None"
-	game.innerHTML = "You haven't started or joined a game yet. If you have an access code, click Join Game. Otherwise, start a new one and invite your friends."
-	scores.innerHTML = "No other players yet."
-	timer.innerHTML = ""
-	chat.innerHTML = ""
+	document.getElementById("acode").innerHTML = "None";
+	document.getElementById("game").innerHTML = "You haven't started or joined a game yet. If you have an access code, click Join Game. Otherwise, start a new one and invite your friends.";
+	document.getElementById("scores").innerHTML = "No other players yet.";
+	document.getElementById("timer").innerHTML = "";
+	document.getElementById("chat").innerHTML = "";
 }
 
 function leaveGame() {
-	initGame()
+	initGame();
 	token = "";
 	accesscode = "";
 	clearInterval(pollIntervalID);
 }
+
+// This is the function that manages all calls to the server. 
+// Since it's asynchonous, it accepts a function to be run on completion.
 
 function sendReq(url, data, doneFunc) {
 	var xhr = new XMLHttpRequest();
@@ -33,13 +39,13 @@ function sendReq(url, data, doneFunc) {
         	var json = JSON.parse(xhr.responseText);
         	if (state != json.State) {
         	    state = json.State;
-        	    game.innerHTML = json.GameHtml;
+        	    document.getElementById("game").innerHTML = json.GameHtml;
         	}
-        	scores.innerHTML = json.ScoreHtml;
-        	timer.innerHTML = json.TimerHtml;
-        	chat.innerHTML += json.ChatHtml;
+        	document.getElementById("scores").innerHTML = json.ScoreHtml;
+        	document.getElementById("timer").innerHTML = json.TimerHtml;
+        	document.getElementById("chat").innerHTML += json.ChatHtml;
 
-        	if (json.ChatHtml != "") {
+        	if (json.ChatHtml !== "") {
 				var objDiv = document.getElementById("chat");
 				objDiv.scrollTop = objDiv.scrollHeight;
 			}
@@ -55,45 +61,46 @@ function sendReq(url, data, doneFunc) {
 }
 
 function endGame() {
-	doneFunc = function(data) { 
+	var doneFunc = function(data) { 
+		data = "";
 		leaveGame(); 
-	}
+	};
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "RequestType": "end" }),doneFunc);
 }
 
 function newGame() {
-	doneFunc = function(data) { 
+	var doneFunc = function(data) { 
 		accesscode = data; 
-		acode.innerHTML = accesscode;
-	}
+		document.getElementById("acode").innerHTML = accesscode;
+	};
 	sendReq("/new",JSON.stringify({}),doneFunc);
 }
 
 function chatGame() {
 
-	if (accesscode == null || accesscode == "") {
-		alert("Join a game to chat.")
+	if (accesscode === null || accesscode === "") {
+		alert("Join a game to chat.");
 		return;
 	} 
 
-	msg = document.getElementById("chatmsg").value;
+	var msg = document.getElementById("chatmsg").value;
 	document.getElementById("chatmsg").value = "";
 
-	if (msg == null) {
+	if (msg === null || msg === "") {
 		return;
 	}
 
-	doneFunc = function(data) {};
+	var doneFunc = function(data) { data = ""; };
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "RequestType": "chat", "Payload" : msg }),doneFunc);
 }
 
 function joinGame() {
 	
-	let name = document.querySelector('#name'); 
-    let code = document.querySelector('#accesscode');
+    var name = document.getElementById("name");
+    var code = document.getElementById("accesscode");
 
-	if (name == null || accesscode == null) {
-		game.innerHTML = `<p><strong>Join Game</strong></p>
+	if (name === null || accesscode === null) {
+		document.getElementById("game").innerHTML = `<p><strong>Join Game</strong></p>
 			<input type="text" id="name" placeholder="Your name" />
 			<input type="text" id="accesscode" placeholder="Access code" />
 			<button onclick="joinGame()">Join!</button>
@@ -101,56 +108,56 @@ function joinGame() {
 		return;
 	} 
 
-	accesscode = code.value
-	acode.innerHTML = accesscode
+	accesscode = code.value;
+	document.getElementById("acode").innerHTML = accesscode;
 	
-	doneFunc = function(data) {
+	var doneFunc = function(data) {
 		token = data;
-        if (pollIntervalID != null) {
+        if (pollIntervalID !== null) {
         	clearInterval(pollIntervalID);
         }	
         pollIntervalID = setInterval(pollGame, 2000);
 
-        game.innerHTML = `<p><strong>Ready To Start?</strong></p>
+        document.getElementById("game").innerHTML = `<p><strong>Ready To Start?</strong></p>
         	<p>Is everyone here?</p>
 			<button onclick="startGame()">Start Game!</button> 
 			`;
-	}
+	};
 
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": name.value, "RequestType": "join" }),doneFunc);
 }
 
 function pollGame() {
-	doneFunc = function(data) {};
+	var doneFunc = function(data) { data = ""; };
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "RequestType": "poll" }),doneFunc);
 }
 
 function startGame() {
-	doneFunc = function(data) {};
+	var doneFunc = function(data) { data = ""; };
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": token, "RequestType": "start" }),doneFunc);
 }
 
 function submitGame() {
-	submission = document.getElementById("submission").value
+	var submission = document.getElementById("submission").value;
 
-	doneFunc = function(data) {};
+	var doneFunc = function(data) { data = ""; };
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "Payload": submission, "RequestType": "submit" }),doneFunc);
 }
 
 function answerGame() {
-	answer = document.querySelector('input[name="answer"]:checked').value
+	var answer = document.querySelector('input[name="answer"]:checked').value;
 
-	doneFunc = function(data) {};
+	var doneFunc = function(data) { data = ""; };
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "Payload": answer, "RequestType": "answer" }),doneFunc);
 }
 
 function nextGame() {
-	doneFunc = function(data) {};
+	var doneFunc = function(data) { data = ""; };
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "Payload": "", "RequestType": "next" }),doneFunc);
 }
 
 function rules() {
-	alert(`This is a literary quiz game. In each round, the players will be presented with the summary of a book, well known or otherwise. Each player will then write the first sentence of that book as she might imagine it to be. Once each player has submitted a suggestion, all the players will be able to guess the real first sentence from a list including all the suggested sentences and, of course, the real one. You get a point for getting the real one and a point for fooling another player. Play continues until all the books have been written and then the person with the highest score wins. Enjoy!`)
+	alert(`This is a literary quiz game. In each round, the players will be presented with the summary of a book, well known or otherwise. Each player will then write the first sentence of that book as she might imagine it to be. Once each player has submitted a suggestion, all the players will be able to guess the real first sentence from a list including all the suggested sentences and, of course, the real one. You get a point for getting the real one and a point for fooling another player. Play continues until all the books have been written and then the person with the highest score wins. Enjoy!`);
 }
 
 </script>
@@ -267,7 +274,8 @@ a:link {
 	</div>
 	<div class="box h">
 		<p><a href='https://docs.google.com/forms/d/1bXCNVe-bNdAvFdBKE_4MAGOswQSVLcg2ziAbXxrBRSw/edit'>Add Books</a></p>
-		Hand coded and &copy; 2020 by Dan Ratner, All Rights Reserved. No personal data is collected by this game.
+		Hand coded and &copy; 2020 by Dan Ratner, All Rights Reserved.<br /> 
+		No personal data is collected by this game and all data submitted is deleted when the game is over.
 	</div>	
 </div>	
 </body>
