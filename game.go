@@ -49,7 +49,7 @@ type Game struct {
 	Xid             string
 	GameID          int
 	AccessCode      string
-	Players         map[string]*Player
+	Players         []*Player
 	Questions       []Question
 	State           string
 	CurrentQuestion Question
@@ -57,6 +57,17 @@ type Game struct {
 }
 
 // === USER FUNCTIONS ===
+
+func (g *Game) PlayerByXid(id string) *Player {
+	for _, p := range g.Players {
+		if p.Xid == id {
+			return p
+		}
+	}
+
+	// Don't return a nil since the results are often piped. Return a zero value instead.
+	return new(Player)
+}
 
 // Start a new game
 func (g *Game) Start() {
@@ -210,13 +221,14 @@ func (g *Game) CloseGuessSubmissions() {
 	for uid, guess := range g.CurrentQuestion.Guesses {
 		if guess == correct {
 			// Give everyone a point who got it right...
-			g.Players[uid].Score++
+			g.PlayerByXid(uid).Score++
+			//g.Players[uid].Score++
 		} else {
 			// Give everyone a point who fooled someone...
 			if uid == g.CurrentQuestion.Answers[guess].User {
 				log.Printf("[Game %s] A user guessed their own answer. Lame-o.", g.AccessCode)
 			} else {
-				g.Players[g.CurrentQuestion.Answers[guess].User].Score++
+				g.PlayerByXid(g.CurrentQuestion.Answers[guess].User).Score++
 			}
 		}
 	}
@@ -254,7 +266,7 @@ func (g *Game) GetTimer() string {
 
 func (g *Game) ShowGame(token string) string {
 
-	var chtml, html string
+	var html string
 
 	switch g.State {
 	case StatePoseQuestion:
@@ -280,23 +292,37 @@ func (g *Game) ShowGame(token string) string {
 		}
 		return html
 	case StateShowResults:
-		for aid, ans := range g.CurrentQuestion.Answers {
-			ghtml := "<p><em>Guessed By: "
-			for pxid, gid := range g.CurrentQuestion.Guesses {
-				if gid == aid {
-					ghtml += g.Players[pxid].Name + " "
-				}
-			}
-			ghtml += "</em></p>"
-			if ans.User == CorrectAnswer {
-				chtml = fmt.Sprintf("<strong>Correct Answer:</strong><p>%s<p>", ans.Answer) + ghtml
-			} else {
-				html = fmt.Sprintf("<strong>Suggestion From %s:</strong><p>%s</p>", g.Players[ans.User].Name, ans.Answer) + ghtml
+
+		if g.CurrentQuestion.ResultsHtml == "" {
+
+			type Result struct {
+				Title     string
+				Answer    string
+				GuessedBy string
 			}
 
+			for aid, ans := range g.CurrentQuestion.Answers {
+				r := Result{Answer: ans.Answer}
+
+				if ans.User == CorrectAnswer {
+					r.Title = "Correct Answer:"
+				} else {
+					r.Title = fmt.Sprintf("Suggestion From %s:", g.PlayerByXid(ans.User).Name)
+				}
+
+				for pxid, gid := range g.CurrentQuestion.Guesses {
+					if gid == aid {
+						r.GuessedBy += g.PlayerByXid(pxid).Name + " "
+					}
+				}
+				if r.GuessedBy == "" {
+					r.GuessedBy = "No players guessed this one."
+				}
+				g.CurrentQuestion.ResultsHtml += fmt.Sprintf("<p><strong>%s</strong></p><p>%s</p><p><em>Guessed by: %s</em></p>", r.Title, r.Answer, r.GuessedBy)
+			}
+			g.CurrentQuestion.ResultsHtml += `<p><button onclick="nextGame()">Next book!</button></p>`
 		}
-		html = chtml + html + `<p><button onclick="nextGame()">Next book!</button></p>`
-		return html
+		return g.CurrentQuestion.ResultsHtml
 	case StateFinal:
 		if g.finalHtml == "" {
 			g.finalHtml = g.FinalResult()
@@ -366,6 +392,6 @@ func (g *Game) AddPlayer(name string) (*Player, error) {
 		}
 	}
 	p := &Player{Xid: xid.New().String(), Name: name, AccessCode: g.AccessCode}
-	g.Players[p.Xid] = p
+	g.Players = append(g.Players, p)
 	return p, nil
 }

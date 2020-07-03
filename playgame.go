@@ -23,8 +23,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 	go TimeoutGame(ch)
 
-	p := make(map[string]*Player)
-	g := &Game{Xid: id, AccessCode: accesscode, State: StateSetup, Players: p}
+	g := &Game{Xid: id, AccessCode: accesscode, State: StateSetup}
 
 	for {
 
@@ -32,7 +31,6 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 		req := <-ch
 
-		//presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: ""}
 		presp = PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: "", State: g.GetState(), Payload: ""}
 
 		if req.RequestType != ReqTypePoll {

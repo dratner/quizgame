@@ -5,13 +5,14 @@ import (
 )
 
 type Question struct {
-	Xid     string
-	Summary string
-	First   string
-	Last    string
-	Answers []Answer
-	Guesses map[string]int
-	Posed   time.Time
+	Xid         string
+	Summary     string
+	First       string
+	Last        string
+	Answers     []Answer
+	Guesses     map[string]int
+	Posed       time.Time
+	ResultsHtml string // Caching final output
 }
 
 func (q *Question) HasSubmitted(id string) bool {
