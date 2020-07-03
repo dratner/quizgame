@@ -3,8 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 )
+
+func StripTags(content string) string {
+	re := regexp.MustCompile(`<(.|\n)*?>`)
+	return re.ReplaceAllString(content, "")
+}
 
 func TimeoutQuestion(ch chan PlayerReq, id string) {
 	time.Sleep(QuestionTimeout * time.Second)
@@ -38,6 +44,10 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			log.Printf("[Game %s] Processing %s request.", g.AccessCode, req.RequestType)
 		}
 
+		if req.Payload != "" {
+			req.Payload = StripTags(req.Payload)
+		}
+
 		switch req.RequestType {
 		case ReqTypeChat:
 			if g.CheckPermission(req.Token) {
@@ -61,6 +71,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypeStart:
 			g.Start()
+			g.PlayerChat.AddMessage(AdminName, "Let's play!")
 			if g.State == StatePoseQuestion {
 				go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
 			}

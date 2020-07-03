@@ -38,6 +38,12 @@ function sendReq(url, data, doneFunc) {
         	scores.innerHTML = json.ScoreHtml;
         	timer.innerHTML = json.TimerHtml;
         	chat.innerHTML += json.ChatHtml;
+
+        	if (json.ChatHtml != "") {
+				var objDiv = document.getElementById("chat");
+				objDiv.scrollTop = objDiv.scrollHeight;
+			}
+
         	doneFunc(json.Payload);
     	}
     	if (xhr.readyState === 4 && xhr.status === 422) {
@@ -87,9 +93,9 @@ function joinGame() {
     let code = document.querySelector('#accesscode');
 
 	if (name == null || accesscode == null) {
-		game.innerHTML = `<p><strong>Join Game:</strong></p>
-			<input type="text" id="name" placeholder="Your name">
-			<input type="text" id="accesscode" placeholder="Access code">
+		game.innerHTML = `<p><strong>Join Game</strong></p>
+			<input type="text" id="name" placeholder="Your name" />
+			<input type="text" id="accesscode" placeholder="Access code" />
 			<button onclick="joinGame()">Join!</button>
 			`;
 		return;
@@ -166,8 +172,9 @@ a:link {
 }
 
 .chatview {
-	overflow-y: scroll;
     overflow-x: none;
+	overflow-y: scroll;
+	height: 400px;
 }
 
 .wrapper {
@@ -214,7 +221,7 @@ a:link {
     .g {
     	grid-column: 3;
     	grid-row: 4;
-    	overflow-y: scroll;
+    	overflow-y: none;
     	overflow-x: none;
     }
     .h {
@@ -236,24 +243,24 @@ a:link {
 		<a href="javascript:rules();">How To Play</a>
 	</div>
 	<div class="box c">
-		<p><strong>Access Code:</strong></p>
+		<p><strong>Access Code</strong></p>
 		<div class="acodeview" id="acode"></div>
 	</div>
 	<div class="box d">
-		<p><strong>Players & Scores:</strong></p>
+		<p><strong>Players & Scores</strong></p>
 		<div class="scoresview" id="scores"></div>
 	</div>
 	<div class="box e">
-		<p><strong>Time Remaining:</strong></p>
+		<p><strong>Time Remaining</strong></p>
 		<div class="timerview" id="timer"></div>
 	</div>	
 	<div class="box f">
-		<p><strong>Game:</strong></p>
+		<p><strong>Game</strong></p>
 		<hr />
 		<div class="gameview" id="game"></div>
 	</div>
 	<div class="box g">
-		<p><strong>Chat:</strong></p>
+		<p><strong>Chat</strong></p>
 		<hr />
 		<div class="chatview" id="chat"></div>
 		<p><input type="text" id="chatmsg" /><button onclick="chatGame()">Send</button></p>
