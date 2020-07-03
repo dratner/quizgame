@@ -89,6 +89,7 @@ func (h *newHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Created new game with access code %s.", ac)
+	log.Printf("There are a total of %d games live at the moment.", len(Games))
 
 	w.Write(jsonOut)
 }

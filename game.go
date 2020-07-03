@@ -246,8 +246,6 @@ func (g *Game) GetTimer() string {
 		if i < 0 {
 			i = 0
 		}
-		log.Printf("[Game %s] Timer showing %d seconds", g.AccessCode, i)
-
 		return fmt.Sprintf("%d seconds", i)
 	}
 
