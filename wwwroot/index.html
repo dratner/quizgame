@@ -65,6 +65,11 @@ function newGame() {
 
 function chatGame() {
 
+	if (accesscode == null || accesscode == "") {
+		alert("Join a game to chat.")
+		return;
+	} 
+
 	msg = document.getElementById("chatmsg").value;
 	document.getElementById("chatmsg").value = "";
 
@@ -249,6 +254,7 @@ a:link {
 	</div>
 	<div class="box g">
 		<p><strong>Chat:</strong></p>
+		<hr />
 		<div class="chatview" id="chat"></div>
 		<p><input type="text" id="chatmsg" /><button onclick="chatGame()">Send</button></p>
 	</div>

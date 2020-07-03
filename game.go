@@ -32,6 +32,7 @@ const (
 	ReqTypeChat       = "chat"
 	CorrectAnswer     = "correct"
 	QuestionTimeout   = 120
+	AdminName         = "Admin"
 )
 
 type Player struct {
@@ -228,6 +229,7 @@ func (g *Game) CloseGuessSubmissions() {
 		} else {
 			// Give everyone a point who fooled someone...
 			if uid == g.CurrentQuestion.Answers[guess].User {
+				g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("Come on, %s, don't guess your own answer. Lame-o.", g.PlayerByXid(uid).Name))
 				log.Printf("[Game %s] A user guessed their own answer. Lame-o.", g.AccessCode)
 			} else {
 				g.PlayerByXid(g.CurrentQuestion.Answers[guess].User).Score++

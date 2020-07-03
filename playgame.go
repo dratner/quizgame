@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -75,6 +76,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypeNext:
 			if g.State == StateShowResults {
+				g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("There are %d books left!", len(g.Questions)))
 				g.PlayQuestion()
 				if g.State == StatePoseQuestion {
 					go TimeoutQuestion(ch, g.CurrentQuestion.Xid)

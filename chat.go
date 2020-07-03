@@ -36,7 +36,7 @@ func (c *Chat) GetMessages(id string) string {
 	html := ""
 
 	for _, m := range msgs {
-		html += fmt.Sprintf("<p><strong>%s:</strong> %s</p>", m.Name, m.Body)
+		html += fmt.Sprintf("<p><em>%s:</em> %s</p>", m.Name, m.Body)
 	}
 
 	return html
