@@ -64,10 +64,10 @@ function joinGame() {
 
 
 	if (name == null || accesscode == null) {
-		game.innerHTML = `
+		game.innerHTML = `<p><strong>Join Game:</strong></p>
 			<input type="text" id="name" placeholder="Your name">
 			<input type="text" id="accesscode" placeholder="Access code">
-			<button onclick="joinGame()">Join Game!</button>
+			<button onclick="joinGame()">Join!</button>
 			`;
 		return;
 	} else {
@@ -146,7 +146,7 @@ a:link {
     display: grid;
     grid-gap: 10px;
         grid-template-columns: 25% 50% 25%;
-        grid-template-rows: 50px 60px 60px 100% 70px;
+        grid-template-rows: 50px 60px 60px auto 70px;
         background-color: linen;
     }
 
@@ -214,6 +214,7 @@ a:link {
 		<div class="timerview" id="timer"></div>
 	</div>	
 	<div class="box f">
+		<hr />
 		<div class="gameview" id="game"></div>
 	</div>
 	<div class="box g">
