@@ -9,11 +9,16 @@ var accesscode = "";
 var pollIntervalID;
 var state = "";
 
+function initGame() {
+	acode.innerHTML = "None"
+	game.innerHTML = "You haven't started or joined a game yet. If you have an access code, click Join Game. Otherwise, start a new one and invite your friends."
+	scores.innerHTML = "No other players yet."
+	timer.innerHTML = ""
+	chat.innerHTML = ""
+}
+
 function leaveGame() {
-	acode.innerHTML = "";
-	game.innerHTML = ""; 
-	scores.innerHTML = "";
-	timer.innerHTML = "";
+	initGame()
 	token = "";
 	accesscode = "";
 	clearInterval(pollIntervalID);
@@ -32,6 +37,7 @@ function sendReq(url, data, doneFunc) {
         	}
         	scores.innerHTML = json.ScoreHtml;
         	timer.innerHTML = json.TimerHtml;
+        	chat.innerHTML += json.ChatHtml;
         	doneFunc(json.Payload);
     	}
     	if (xhr.readyState === 4 && xhr.status === 422) {
@@ -57,11 +63,23 @@ function newGame() {
 	sendReq("/new",JSON.stringify({}),doneFunc);
 }
 
+function chatGame() {
+
+	msg = document.getElementById("chatmsg").value;
+	document.getElementById("chatmsg").value = "";
+
+	if (msg == null) {
+		return;
+	}
+
+	doneFunc = function(data) {};
+	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Token": token, "RequestType": "chat", "Payload" : msg }),doneFunc);
+}
+
 function joinGame() {
 	
 	let name = document.querySelector('#name'); 
     let code = document.querySelector('#accesscode');
-
 
 	if (name == null || accesscode == null) {
 		game.innerHTML = `<p><strong>Join Game:</strong></p>
@@ -70,11 +88,11 @@ function joinGame() {
 			<button onclick="joinGame()">Join!</button>
 			`;
 		return;
-	} else {
-		    accesscode = code.value
-		    acode.innerHTML = accesscode
-	}
+	} 
 
+	accesscode = code.value
+	acode.innerHTML = accesscode
+	
 	doneFunc = function(data) {
 		token = data;
         if (pollIntervalID != null) {
@@ -142,13 +160,18 @@ a:link {
   color: maroon;
 }
 
+.chatview {
+	overflow-y: scroll;
+    overflow-x: none;
+}
+
 .wrapper {
 	font-size: 14px;
     font-family: Arial, Helvetica, sans-serif;
     display: grid;
     grid-gap: 10px;
-        grid-template-columns: 25% 50% 25%;
-        grid-template-rows: 50px auto auto auto auto;
+        grid-template-columns: 25% 40% 35%;
+        grid-template-rows: 50px auto auto 500px auto;
         background-color: linen;
     }
    
@@ -180,17 +203,23 @@ a:link {
         grid-row: 3;
     }
     .f {
-    	grid-column: 1/4;
+    	grid-column: 1/3;
     	grid-row: 4;
     }
     .g {
+    	grid-column: 3;
+    	grid-row: 4;
+    	overflow-y: scroll;
+    	overflow-x: none;
+    }
+    .h {
     	grid-column: 1/4;
     	grid-row: 5;
     	font-size: 12px;
     }
 </style>
 </head>
-<body>
+<body onLoad="javascript:initGame()">
 <div class="wrapper">
 	<div class="box a">
 		<strong>Famous Firsts</strong>
@@ -203,21 +232,27 @@ a:link {
 	</div>
 	<div class="box c">
 		<p><strong>Access Code:</strong></p>
-		<div class="acodeview" id="acode">Haven't joined a game.</div>
+		<div class="acodeview" id="acode"></div>
 	</div>
 	<div class="box d">
 		<p><strong>Players & Scores:</strong></p>
-		<div class="scoresview" id="scores">No other players yet.</div>
+		<div class="scoresview" id="scores"></div>
 	</div>
 	<div class="box e">
 		<p><strong>Time Remaining:</strong></p>
 		<div class="timerview" id="timer"></div>
 	</div>	
 	<div class="box f">
+		<p><strong>Game:</strong></p>
 		<hr />
 		<div class="gameview" id="game"></div>
 	</div>
 	<div class="box g">
+		<p><strong>Chat:</strong></p>
+		<div class="chatview" id="chat"></div>
+		<p><input type="text" id="chatmsg" /><button onclick="chatGame()">Send</button></p>
+	</div>
+	<div class="box h">
 		<p><a href='https://docs.google.com/forms/d/1bXCNVe-bNdAvFdBKE_4MAGOswQSVLcg2ziAbXxrBRSw/edit'>Add Books</a></p>
 		Hand coded and &copy; 2020 by Dan Ratner, All Rights Reserved. No personal data is collected by this game.
 	</div>	

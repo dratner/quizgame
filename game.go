@@ -29,6 +29,7 @@ const (
 	ReqTypeTimeout    = "timeout"
 	ReqTypeSubmit     = "submit"
 	ReqTypeAnswer     = "answer"
+	ReqTypeChat       = "chat"
 	CorrectAnswer     = "correct"
 	QuestionTimeout   = 120
 )
@@ -53,6 +54,7 @@ type Game struct {
 	Questions       []Question
 	State           string
 	CurrentQuestion Question
+	PlayerChat      Chat
 	finalHtml       string
 }
 

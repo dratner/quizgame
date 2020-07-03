@@ -30,6 +30,7 @@ type PlayerResp struct {
 	TimerHtml string
 	ScoreHtml string
 	GameHtml  string
+	ChatHtml  string
 	State     string
 	Payload   string
 }

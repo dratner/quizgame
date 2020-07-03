@@ -31,13 +31,20 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 		req := <-ch
 
-		presp = PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: "", State: g.GetState(), Payload: ""}
+		presp = PlayerResp{TimerHtml: "", ScoreHtml: "", GameHtml: "", State: g.GetState(), ChatHtml: "", Payload: ""}
 
 		if req.RequestType != ReqTypePoll {
 			log.Printf("[Game %s] Processing %s request.", g.AccessCode, req.RequestType)
 		}
 
 		switch req.RequestType {
+		case ReqTypeChat:
+			if g.CheckPermission(req.Token) {
+				g.PlayerChat.AddMessage(g.PlayerByXid(req.Token).Name, req.Payload)
+				log.Printf("[Game %s] Chat request by player: %s", g.AccessCode, g.PlayerByXid(req.Token).Name)
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Token), State: g.GetState(), Payload: "", ChatHtml: g.PlayerChat.GetMessages(req.Token)}
+			}
+			break
 		case ReqTypeJoin:
 			p, err := g.AddPlayer(req.Payload)
 			if err != nil {
@@ -48,7 +55,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypePoll:
 			if g.CheckPermission(req.Token) {
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Token), State: g.GetState(), Payload: ""}
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: g.ShowGame(req.Token), State: g.GetState(), Payload: "", ChatHtml: g.PlayerChat.GetMessages(req.Token)}
 			}
 			break
 		case ReqTypeStart:
