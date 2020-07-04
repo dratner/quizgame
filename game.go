@@ -357,8 +357,9 @@ func (g *Game) FromFile(f string) error {
 
 	for i, _ := range g.Questions {
 		g.Questions[i].Xid = xid.New().String()
-		log.Printf("[Game %s] Loading quesion %s", g.AccessCode, g.Questions[i].Xid)
 	}
+
+	log.Printf("[Game %s] Loaded %d quesions.", g.AccessCode, len(g.Questions))
 
 	log.Printf("[Game %s] Shuffling...", g.AccessCode)
 
