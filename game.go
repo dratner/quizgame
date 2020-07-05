@@ -32,8 +32,8 @@ const (
 	ReqTypeAnswer          = "answer"
 	ReqTypeChat            = "chat"
 	CorrectAnswer          = "correct"
-	QuestionTimeout        = 15
-	AnswerTimeout          = 10
+	QuestionTimeout        = 120
+	AnswerTimeout          = 60
 	AdminName              = "Admin"
 )
 
