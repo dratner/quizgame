@@ -117,12 +117,6 @@ function joinGame() {
         	clearInterval(pollIntervalID);
         }	
         pollIntervalID = setInterval(pollGame, 2000);
-
-     /*   document.getElementById("game").innerHTML = `<p><strong>Ready To Start?</strong></p>
-        	<p>Is everyone here?</p>
-			<button onclick="startGame()">Start Game!</button> 
-			`; 
-	 */
 	};
 
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": name.value, "RequestType": "join" }),doneFunc);
