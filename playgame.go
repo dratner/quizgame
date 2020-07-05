@@ -14,7 +14,13 @@ func StripTags(content string) string {
 
 func TimeoutQuestion(ch chan PlayerReq, id string) {
 	time.Sleep(QuestionTimeout * time.Second)
-	req := PlayerReq{RequestType: ReqTypeTimeout, Payload: id, RespChan: make(chan PlayerResp, 2)}
+	req := PlayerReq{RequestType: ReqTypeQuestionTimeout, Payload: id, RespChan: make(chan PlayerResp, 2)}
+	ch <- req
+}
+
+func TimeoutAnswer(ch chan PlayerReq, id string) {
+	time.Sleep(AnswerTimeout * time.Second)
+	req := PlayerReq{RequestType: ReqTypeAnswerTimeout, Payload: id, RespChan: make(chan PlayerResp, 2)}
 	ch <- req
 }
 
@@ -61,7 +67,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			if err != nil {
 				log.Printf("[Game %s] Error: %s", g.AccessCode, err)
 			} else {
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "", State: g.GetState(), Payload: p.Xid}
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Joining game...", State: StateTemp, Payload: p.Xid}
 			}
 			break
 		case ReqTypePoll:
@@ -70,16 +76,24 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			}
 			break
 		case ReqTypeStart:
-			g.Start()
-			g.PlayerChat.AddMessage(AdminName, "Let's play!")
-			if g.State == StatePoseQuestion {
-				go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
+			// Avoid the case of two people starting game at same time.
+			if g.State == StateSetup {
+				g.Start()
+				g.PlayerChat.AddMessage(AdminName, "Let's play!")
+				if g.State == StatePoseQuestion {
+					go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
+				}
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
 			}
-			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
 			break
 		case ReqTypeSubmit:
-			g.Submit(req.Token, req.Payload)
-			presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
+			if g.State == StatePoseQuestion {
+				g.Submit(req.Token, req.Payload)
+				if g.State == StateOfferAnswers {
+					go TimeoutAnswer(ch, g.CurrentQuestion.Xid)
+				}
+				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
+			}
 			break
 		case ReqTypeAnswer:
 			g.Answer(req.Token, req.Payload)
@@ -87,7 +101,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypeNext:
 			if g.State == StateShowResults {
-				g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("There are %d books left!", len(g.Questions)))
+				g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("There are %d books left.", len(g.Questions)))
 				g.PlayQuestion()
 				if g.State == StatePoseQuestion {
 					go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
@@ -97,12 +111,25 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 				}
 			}
 			break
-		case ReqTypeTimeout:
+		case ReqTypeQuestionTimeout:
 			if g.State == StatePoseQuestion {
 				if g.CurrentQuestion.Xid == req.Payload {
-					log.Printf("[Game %s] Timeout for question %s", g.AccessCode, g.CurrentQuestion.Xid)
+					log.Printf("[Game %s] Timeout for submitting question %s", g.AccessCode, g.CurrentQuestion.Xid)
 					g.CloseQuestionSubmissions()
+					go TimeoutAnswer(ch, g.CurrentQuestion.Xid)
 					log.Printf("[Game %s] State %s", g.AccessCode, g.State)
+					g.PlayerChat.AddMessage(AdminName, "Time's up! Let's see what you came up with.")
+
+				}
+			}
+			break
+		case ReqTypeAnswerTimeout:
+			if g.State == StateOfferAnswers {
+				if g.CurrentQuestion.Xid == req.Payload {
+					log.Printf("[Game %s] Timeout for guessing question %s", g.AccessCode, g.CurrentQuestion.Xid)
+					g.CloseGuessSubmissions()
+					log.Printf("[Game %s] State %s", g.AccessCode, g.State)
+					g.PlayerChat.AddMessage(AdminName, "Time's up! Let's see what the answers were.")
 				}
 			}
 			break

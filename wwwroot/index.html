@@ -118,10 +118,11 @@ function joinGame() {
         }	
         pollIntervalID = setInterval(pollGame, 2000);
 
-        document.getElementById("game").innerHTML = `<p><strong>Ready To Start?</strong></p>
+     /*   document.getElementById("game").innerHTML = `<p><strong>Ready To Start?</strong></p>
         	<p>Is everyone here?</p>
 			<button onclick="startGame()">Start Game!</button> 
-			`;
+			`; 
+	 */
 	};
 
 	sendReq("/req",JSON.stringify({ "AccessCode": accesscode, "Payload": name.value, "RequestType": "join" }),doneFunc);
@@ -160,6 +161,9 @@ function rules() {
 	alert(`This is a literary quiz game. In each round, the players will be presented with the summary of a book, well known or otherwise. Each player will then write the first sentence of that book as she might imagine it to be. Once each player has submitted a suggestion, all the players will be able to guess the real first sentence from a list including all the suggested sentences and, of course, the real one. You get a point for getting the real one and a point for fooling another player. Play continues until all the books have been written and then the person with the highest score wins. Enjoy!`);
 }
 
+function debug() {
+	alert(state);
+}
 </script>
 <style>
 
@@ -183,6 +187,7 @@ a:link {
 	overflow-y: scroll;
 	height: 400px;
 }
+
 
 .wrapper {
 	font-size: 14px;
@@ -250,6 +255,7 @@ a:link {
 		<a href="javascript:joinGame();">Join Game</a>&nbsp;&nbsp;&nbsp;
 		<a href="javascript:leaveGame();">Leave Game</a>&nbsp;&nbsp;&nbsp;
 		<a href="javascript:rules();">How To Play</a>
+		<a href="javascript:debug();">DEBUG</a>
 	</div>
 	<div class="box c">
 		<p><strong>Access Code</strong></p>

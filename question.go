@@ -12,6 +12,7 @@ type Question struct {
 	Answers     []Answer
 	Guesses     map[string]int
 	Posed       time.Time
+	Guessed     time.Time
 	ResultsHtml string // Caching final output
 }
 

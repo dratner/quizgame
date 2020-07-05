@@ -15,24 +15,26 @@ import (
 
 //The form for State is enum+(Question Xid)
 const (
-	StateSetup        = "setup"
-	StateTemp         = "temp"
-	StatePoseQuestion = "pose"
-	StateOfferAnswers = "answer"
-	StateShowResults  = "show"
-	StateFinal        = "final"
-	ReqTypeJoin       = "join"
-	ReqTypeStart      = "start"
-	ReqTypePoll       = "poll"
-	ReqTypeEnd        = "end"
-	ReqTypeNext       = "next"
-	ReqTypeTimeout    = "timeout"
-	ReqTypeSubmit     = "submit"
-	ReqTypeAnswer     = "answer"
-	ReqTypeChat       = "chat"
-	CorrectAnswer     = "correct"
-	QuestionTimeout   = 120
-	AdminName         = "Admin"
+	StateSetup             = "setup"
+	StateTemp              = "temp"
+	StatePoseQuestion      = "pose"
+	StateOfferAnswers      = "answer"
+	StateShowResults       = "show"
+	StateFinal             = "final"
+	ReqTypeJoin            = "join"
+	ReqTypeStart           = "start"
+	ReqTypePoll            = "poll"
+	ReqTypeEnd             = "end"
+	ReqTypeNext            = "next"
+	ReqTypeQuestionTimeout = "qtimeout"
+	ReqTypeAnswerTimeout   = "atimeout"
+	ReqTypeSubmit          = "submit"
+	ReqTypeAnswer          = "answer"
+	ReqTypeChat            = "chat"
+	CorrectAnswer          = "correct"
+	QuestionTimeout        = 15
+	AnswerTimeout          = 10
+	AdminName              = "Admin"
 )
 
 type Player struct {
@@ -210,6 +212,7 @@ func (g *Game) CloseQuestionSubmissions() {
 		})
 	}
 	g.State = StateOfferAnswers
+	g.CurrentQuestion.Guessed = time.Now()
 }
 
 func (g *Game) CloseGuessSubmissions() {
@@ -225,7 +228,6 @@ func (g *Game) CloseGuessSubmissions() {
 		if guess == correct {
 			// Give everyone a point who got it right...
 			g.PlayerByXid(uid).Score++
-			//g.Players[uid].Score++
 		} else {
 			// Give everyone a point who fooled someone...
 			if uid == g.CurrentQuestion.Answers[guess].User {
@@ -264,6 +266,13 @@ func (g *Game) GetTimer() string {
 		}
 		return fmt.Sprintf("%d seconds", i)
 	}
+	if g.State == StateOfferAnswers {
+		i := AnswerTimeout - int(time.Since(g.CurrentQuestion.Guessed).Seconds())
+		if i < 0 {
+			i = 0
+		}
+		return fmt.Sprintf("%d seconds", i)
+	}
 
 	return ""
 }
@@ -273,6 +282,12 @@ func (g *Game) ShowGame(token string) string {
 	var html string
 
 	switch g.State {
+	case StateSetup:
+		html = `<p><strong>Ready To Start?</strong></p>
+        	<p>Is everyone here?</p>
+			<button onclick="startGame()">Start Game!</button> 
+			`
+		return html
 	case StatePoseQuestion:
 		if g.CurrentQuestion.HasSubmitted(token) {
 			html = "Waiting for others to submit their sentences..."
