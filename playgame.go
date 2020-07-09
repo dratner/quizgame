@@ -76,12 +76,14 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			break
 		case ReqTypeSubmit:
 			if g.State == StatePoseQuestion {
-				g.Submit(req.Token, req.Payload)
-				if g.State == StateOfferAnswers {
-					go Timeout(ch, g.CurrentQuestion.Xid, ReqTypeAnswerTimeout, TimeoutAnswer)
+				if req.Payload != "" {
+					g.Submit(req.Token, req.Payload)
+					if g.State == StateOfferAnswers {
+						go Timeout(ch, g.CurrentQuestion.Xid, ReqTypeAnswerTimeout, TimeoutAnswer)
 
+					}
+					presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
 				}
-				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
 			}
 			break
 		case ReqTypeAnswer:

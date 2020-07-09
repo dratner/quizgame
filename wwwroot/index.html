@@ -41,6 +41,9 @@ function sendReq(url, data, doneFunc) {
         	    state = json.State;
         	    document.getElementById("game").innerHTML = json.GameHtml;
         	}
+        	if (document.getElementById("game").innerHTML === "") {
+        		document.getElementById("game").innerHTML = json.GameHtml;
+        	}
         	document.getElementById("scores").innerHTML = json.ScoreHtml;
         	document.getElementById("timer").innerHTML = json.TimerHtml;
         	document.getElementById("chat").innerHTML += json.ChatHtml;
