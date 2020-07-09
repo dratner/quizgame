@@ -32,8 +32,10 @@ const (
 	ReqTypeAnswer          = "answer"
 	ReqTypeChat            = "chat"
 	CorrectAnswer          = "correct"
-	QuestionTimeout        = 120
-	AnswerTimeout          = 60
+	TimeoutQuestion        = 120   // 2 minutes
+	TimeoutAnswer          = 60    // 1 minute
+	TimeoutDisplay         = 60    // 1 minute
+	TimeoutGame            = 86400 // 24 hours
 	AdminName              = "Admin"
 )
 
@@ -260,14 +262,14 @@ func (g *Game) GetState() string {
 
 func (g *Game) GetTimer() string {
 	if g.State == StatePoseQuestion {
-		i := QuestionTimeout - int(time.Since(g.CurrentQuestion.Posed).Seconds())
+		i := TimeoutQuestion - int(time.Since(g.CurrentQuestion.Posed).Seconds())
 		if i < 0 {
 			i = 0
 		}
 		return fmt.Sprintf("%d seconds", i)
 	}
 	if g.State == StateOfferAnswers {
-		i := AnswerTimeout - int(time.Since(g.CurrentQuestion.Guessed).Seconds())
+		i := TimeoutAnswer - int(time.Since(g.CurrentQuestion.Guessed).Seconds())
 		if i < 0 {
 			i = 0
 		}

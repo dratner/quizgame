@@ -12,21 +12,9 @@ func StripTags(content string) string {
 	return re.ReplaceAllString(content, "")
 }
 
-func TimeoutQuestion(ch chan PlayerReq, id string) {
-	time.Sleep(QuestionTimeout * time.Second)
-	req := PlayerReq{RequestType: ReqTypeQuestionTimeout, Payload: id, RespChan: make(chan PlayerResp, 2)}
-	ch <- req
-}
-
-func TimeoutAnswer(ch chan PlayerReq, id string) {
-	time.Sleep(AnswerTimeout * time.Second)
-	req := PlayerReq{RequestType: ReqTypeAnswerTimeout, Payload: id, RespChan: make(chan PlayerResp, 2)}
-	ch <- req
-}
-
-func TimeoutGame(ch chan PlayerReq) {
-	time.Sleep(24 * time.Hour)
-	req := PlayerReq{RequestType: ReqTypeEnd}
+func Timeout(ch chan PlayerReq, id string, kind string, secs int) {
+	time.Sleep(time.Duration(secs) * time.Second)
+	req := PlayerReq{RequestType: kind, Payload: id, RespChan: make(chan PlayerResp, 2)}
 	ch <- req
 }
 
@@ -34,7 +22,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 
 	var presp PlayerResp
 
-	go TimeoutGame(ch)
+	go Timeout(ch, "", ReqTypeEnd, TimeoutGame)
 
 	g := &Game{Xid: id, AccessCode: accesscode, State: StateSetup}
 
@@ -81,7 +69,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 				g.Start()
 				g.PlayerChat.AddMessage(AdminName, "Let's play!")
 				if g.State == StatePoseQuestion {
-					go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
+					go Timeout(ch, g.CurrentQuestion.Xid, ReqTypeQuestionTimeout, TimeoutQuestion)
 				}
 				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "OK! Let's go!", State: StateTemp, Payload: ""}
 			}
@@ -90,7 +78,8 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			if g.State == StatePoseQuestion {
 				g.Submit(req.Token, req.Payload)
 				if g.State == StateOfferAnswers {
-					go TimeoutAnswer(ch, g.CurrentQuestion.Xid)
+					go Timeout(ch, g.CurrentQuestion.Xid, ReqTypeAnswerTimeout, TimeoutAnswer)
+
 				}
 				presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Got it!", State: StateTemp, Payload: ""}
 			}
@@ -104,7 +93,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 				g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("There are %d books left.", len(g.Questions)))
 				g.PlayQuestion()
 				if g.State == StatePoseQuestion {
-					go TimeoutQuestion(ch, g.CurrentQuestion.Xid)
+					go Timeout(ch, g.CurrentQuestion.Xid, ReqTypeQuestionTimeout, TimeoutQuestion)
 					presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "Getting next question!", State: StateTemp, Payload: ""}
 				} else {
 					presp = PlayerResp{TimerHtml: g.GetTimer(), ScoreHtml: g.GetScores(), GameHtml: "All done!", State: StateTemp, Payload: ""}
@@ -116,7 +105,7 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 				if g.CurrentQuestion.Xid == req.Payload {
 					log.Printf("[Game %s] Timeout for submitting question %s", g.AccessCode, g.CurrentQuestion.Xid)
 					g.CloseQuestionSubmissions()
-					go TimeoutAnswer(ch, g.CurrentQuestion.Xid)
+					go Timeout(ch, g.CurrentQuestion.Xid, ReqTypeAnswerTimeout, TimeoutAnswer)
 					log.Printf("[Game %s] State %s", g.AccessCode, g.State)
 					g.PlayerChat.AddMessage(AdminName, "Time's up! Let's see what you came up with.")
 
