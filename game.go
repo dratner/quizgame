@@ -26,8 +26,9 @@ const (
 	ReqTypePoll            = "poll"
 	ReqTypeEnd             = "end"
 	ReqTypeNext            = "next"
-	ReqTypeQuestionTimeout = "qtimeout"
-	ReqTypeAnswerTimeout   = "atimeout"
+	ReqTypeTimeoutQuestion = "questiontimeout"
+	ReqTypeTimeoutAnswer   = "answertimeout"
+	ReqTypeTimeoutDisplay  = "displaytimeout"
 	ReqTypeSubmit          = "submit"
 	ReqTypeAnswer          = "answer"
 	ReqTypeChat            = "chat"
@@ -57,10 +58,11 @@ type Game struct {
 	AccessCode      string
 	Players         []*Player
 	Questions       []Question
-	State           string
 	CurrentQuestion Question
 	PlayerChat      Chat
 	finalHtml       string
+	Ch              chan PlayerReq
+	state           string
 }
 
 // === USER FUNCTIONS ===
@@ -181,16 +183,18 @@ func (g *Game) PlayQuestion() {
 	// If there are no more questions to be asked, we are done.
 	if len(g.Questions) == 0 {
 		log.Printf("[Game %s] All questions have been asked.", g.AccessCode)
-		g.State = StateFinal
+		g.SetState(StateFinal)
 		return
 	}
+
+	g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("There are %d books left.", len(g.Questions)))
 
 	// Move the next question to current and play it.
 	g.CurrentQuestion = g.Questions[0]
 	g.CurrentQuestion.Guesses = make(map[string]int)
 	g.CurrentQuestion.Posed = time.Now()
 	g.Questions = g.Questions[1:]
-	g.State = StatePoseQuestion
+	g.SetState(StatePoseQuestion)
 
 	log.Printf("[Game %s] Posing question %s. %d questions remaining.", g.AccessCode, g.CurrentQuestion.Xid, len(g.Questions))
 }
@@ -213,7 +217,7 @@ func (g *Game) CloseQuestionSubmissions() {
 			g.CurrentQuestion.Answers[i], g.CurrentQuestion.Answers[j] = g.CurrentQuestion.Answers[j], g.CurrentQuestion.Answers[i]
 		})
 	}
-	g.State = StateOfferAnswers
+	g.SetState(StateOfferAnswers)
 	g.CurrentQuestion.Guessed = time.Now()
 }
 
@@ -240,7 +244,7 @@ func (g *Game) CloseGuessSubmissions() {
 			}
 		}
 	}
-	g.State = StateShowResults
+	g.SetState(StateShowResults)
 }
 
 // === THESE ARE DISPLAY FUNCS ===
@@ -254,36 +258,64 @@ func (g *Game) GetScores() string {
 }
 
 func (g *Game) GetState() string {
+	return g.state
+}
+
+/*
+func (g *Game) GetState() string {
 	if g.CurrentQuestion.Xid == "" {
-		return g.State
+		return g.state
 	}
-	return g.State + g.CurrentQuestion.Xid
+	return g.state + g.CurrentQuestion.Xid
+}
+*/
+func (g *Game) SetState(state string) {
+	if state == g.state {
+		return
+	}
+	switch state {
+	case StateShowResults:
+		g.CurrentQuestion.Results = time.Now()
+		go Timeout(g.Ch, g.CurrentQuestion.Xid, ReqTypeTimeoutDisplay, TimeoutDisplay)
+		break
+	case StateOfferAnswers:
+		g.CurrentQuestion.Guessed = time.Now()
+		go Timeout(g.Ch, g.CurrentQuestion.Xid, ReqTypeTimeoutAnswer, TimeoutAnswer)
+		break
+	case StatePoseQuestion:
+		g.CurrentQuestion.Posed = time.Now()
+		go Timeout(g.Ch, g.CurrentQuestion.Xid, ReqTypeTimeoutQuestion, TimeoutQuestion)
+		break
+	}
+	g.state = state
 }
 
 func (g *Game) GetTimer() string {
-	if g.State == StatePoseQuestion {
-		i := TimeoutQuestion - int(time.Since(g.CurrentQuestion.Posed).Seconds())
-		if i < 0 {
-			i = 0
-		}
-		return fmt.Sprintf("%d seconds", i)
-	}
-	if g.State == StateOfferAnswers {
-		i := TimeoutAnswer - int(time.Since(g.CurrentQuestion.Guessed).Seconds())
-		if i < 0 {
-			i = 0
-		}
-		return fmt.Sprintf("%d seconds", i)
+
+	var i int
+
+	if g.state == StatePoseQuestion {
+		i = TimeoutQuestion - int(time.Since(g.CurrentQuestion.Posed).Seconds())
+	} else if g.state == StateOfferAnswers {
+		i = TimeoutAnswer - int(time.Since(g.CurrentQuestion.Guessed).Seconds())
+	} else if g.state == StateShowResults {
+		i = TimeoutDisplay - int(time.Since(g.CurrentQuestion.Results).Seconds())
+	} else {
+		return ""
 	}
 
-	return ""
+	if i < 0 {
+		i = 0
+	}
+
+	return fmt.Sprintf("%d seconds", i)
 }
 
 func (g *Game) ShowGame(token string) string {
 
 	var html string
 
-	switch g.State {
+	switch g.state {
 	case StateSetup:
 		html = `<p><strong>Ready To Start?</strong></p>
         	<p>Is everyone here?</p>
