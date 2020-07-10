@@ -113,13 +113,13 @@ func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	preq.AccessCode = strings.ToUpper(preq.AccessCode)
+
 	if _, ok := Games[preq.AccessCode]; !ok {
 		log.Printf("Error: Game with access code %s does not exist.", preq.AccessCode)
 		http.Error(w, fmt.Sprintf("Error: Game with access code %s does not exist.", preq.AccessCode), http.StatusUnprocessableEntity)
 		return
 	}
-
-	//log.Printf("Handling %s request to game %s.", preq.RequestType, preq.AccessCode)
 
 	preq.RespChan = make(chan PlayerResp)
 
