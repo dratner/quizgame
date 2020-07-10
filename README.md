@@ -16,6 +16,10 @@ FEATURE REQUESTIONS
 * Pick how many books for a new game?
 * Add a way to report issues...either through Git or through my wordpress site?
 
+* Add like button
+* No case sensitive access codes
+* Add commas between player names on display page
+
 WONTDO
 
 DONE

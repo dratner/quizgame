@@ -33,7 +33,7 @@ const (
 	ReqTypeAnswer          = "answer"
 	ReqTypeChat            = "chat"
 	CorrectAnswer          = "correct"
-	TimeoutQuestion        = 120   // 2 minutes
+	TimeoutQuestion        = 180   // 3 minutes
 	TimeoutAnswer          = 60    // 1 minute
 	TimeoutDisplay         = 30    // 30 seconds
 	TimeoutGame            = 86400 // 24 hours
@@ -168,7 +168,17 @@ func (g *Game) FinalResult() string {
 		return ss[i].V > ss[j].V
 	})
 
-	html := fmt.Sprintf("<p><strong>The winner is %s!</strong></p><p>", ss[0].K)
+	var html string
+
+	if len(ss) > 1 {
+		if ss[0].V == ss[1].V {
+			html = "<p><strong>Tie game!</strong></p><p>"
+		} else {
+			html = fmt.Sprintf("<p><strong>The winner is %s!</strong></p><p>", ss[0].K)
+		}
+	} else {
+		html = "<p><strong>Did you beat yourself?</strong></p><p>"
+	}
 
 	for _, kv := range ss {
 		html += fmt.Sprintf("%s got %d points.<br />\n", kv.K, kv.V)
@@ -261,14 +271,6 @@ func (g *Game) GetState() string {
 	return g.state
 }
 
-/*
-func (g *Game) GetState() string {
-	if g.CurrentQuestion.Xid == "" {
-		return g.state
-	}
-	return g.state + g.CurrentQuestion.Xid
-}
-*/
 func (g *Game) SetState(state string) {
 	if state == g.state {
 		return
@@ -365,7 +367,10 @@ func (g *Game) ShowGame(token string) string {
 
 				for pxid, gid := range g.CurrentQuestion.Guesses {
 					if gid == aid {
-						r.GuessedBy += g.PlayerByXid(pxid).Name + " "
+						if r.GuessedBy != "" {
+							r.GuessedBy += ", "
+						}
+						r.GuessedBy += g.PlayerByXid(pxid).Name
 					}
 				}
 				if r.GuessedBy == "" {
