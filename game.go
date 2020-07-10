@@ -35,7 +35,7 @@ const (
 	CorrectAnswer          = "correct"
 	TimeoutQuestion        = 120   // 2 minutes
 	TimeoutAnswer          = 60    // 1 minute
-	TimeoutDisplay         = 60    // 1 minute
+	TimeoutDisplay         = 30    // 30 seconds
 	TimeoutGame            = 86400 // 24 hours
 	AdminName              = "Admin"
 )
