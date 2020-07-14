@@ -58,6 +58,7 @@ type Game struct {
 	AccessCode      string
 	Players         []*Player
 	Questions       []Question
+	DoneQuestions   []Question
 	CurrentQuestion Question
 	PlayerChat      Chat
 	finalHtml       string
@@ -144,8 +145,6 @@ func (g *Game) Answer(id, payload string) {
 	}
 }
 
-// === UTIL FUNCTIONS ===
-
 func (g *Game) FinalResult() string {
 
 	m := make(map[string]int)
@@ -184,11 +183,21 @@ func (g *Game) FinalResult() string {
 		html += fmt.Sprintf("%s got %d points.<br />\n", kv.K, kv.V)
 	}
 
-	return html + "<br />"
+	html += "</p><p>The books were:</p><p>"
+
+	for _, q := range g.DoneQuestions {
+		html += fmt.Sprintf("<i>%s</i><br />", q.Title)
+	}
+
+	return html
 
 }
 
 func (g *Game) PlayQuestion() {
+
+	if g.CurrentQuestion.Xid != "" {
+		g.DoneQuestions = append(g.DoneQuestions, g.CurrentQuestion)
+	}
 
 	// If there are no more questions to be asked, we are done.
 	if len(g.Questions) == 0 {

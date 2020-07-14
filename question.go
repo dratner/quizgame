@@ -6,6 +6,8 @@ import (
 
 type Question struct {
 	Xid         string
+	Title       string
+	Author      string
 	Summary     string
 	First       string
 	Last        string
