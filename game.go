@@ -104,13 +104,15 @@ func (g *Game) Submit(id, payload string) {
 	a := Answer{User: id, Answer: payload}
 	g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, a)
 
-	log.Printf("[Game %s] We've got %d total submissions.", g.AccessCode, len(g.CurrentQuestion.Answers))
+	log.Printf("[Game %s] We've got %d total submissions.", g.AccessCode, len(g.CurrentQuestion.Answers)-1)
 
 	// Do we have all the answers? This is one way to change state.
 
 	log.Printf("[Game %s] Submission recorded.", g.AccessCode)
 
-	if len(g.CurrentQuestion.Answers) == len(g.Players) {
+	// Subtract one from the number of answers because the correct answer is in there.
+
+	if len(g.CurrentQuestion.Answers)-1 == len(g.Players) {
 		log.Printf("[Game %s] We've got all the submissions.", g.AccessCode)
 		g.CloseQuestionSubmissions()
 	}
@@ -132,7 +134,7 @@ func (g *Game) Answer(id, payload string) {
 
 	g.CurrentQuestion.Guesses[id] = val
 
-	log.Printf("[Game %s] We've got %d total answers.", g.AccessCode, len(g.CurrentQuestion.Answers))
+	log.Printf("[Game %s] We've got %d total answers.", g.AccessCode, len(g.CurrentQuestion.Answers)-1)
 
 	log.Printf("[Game %s] Answer recorded.", g.AccessCode)
 
@@ -209,7 +211,9 @@ func (g *Game) PlayQuestion() {
 	g.PlayerChat.AddMessage(AdminName, fmt.Sprintf("There are %d books left.", len(g.Questions)))
 
 	// Move the next question to current and play it.
+
 	g.CurrentQuestion = g.Questions[0]
+
 	g.CurrentQuestion.Guesses = make(map[string]int)
 	g.CurrentQuestion.Posed = time.Now()
 	g.Questions = g.Questions[1:]
@@ -222,20 +226,7 @@ func (g *Game) CloseQuestionSubmissions() {
 
 	// We have all the submissions from users or we timed out.
 
-	if !g.CurrentQuestion.HasSubmitted(CorrectAnswer) {
-
-		// Add the correct answer to the list of possible answers.
-
-		ca := Answer{User: CorrectAnswer, Answer: g.CurrentQuestion.First}
-		g.CurrentQuestion.Answers = append(g.CurrentQuestion.Answers, ca)
-
-		// Shuffle the answers.
-
-		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(g.CurrentQuestion.Answers), func(i, j int) {
-			g.CurrentQuestion.Answers[i], g.CurrentQuestion.Answers[j] = g.CurrentQuestion.Answers[j], g.CurrentQuestion.Answers[i]
-		})
-	}
+	g.CurrentQuestion.Shuffle()
 	g.SetState(StateOfferAnswers)
 	g.CurrentQuestion.Guessed = time.Now()
 }
@@ -338,9 +329,9 @@ func (g *Game) ShowGame(token string) string {
 			html = "Waiting for others to submit their sentences..."
 		} else {
 			html = fmt.Sprintf("<p>%s</p>", g.CurrentQuestion.Summary) +
-				`	<p><textarea id="submission" placeholder="Your first sentence" rows="6" cols="80"></textarea></p>
-				<p><button onclick="submitGame()">Submit!</button></p>
-			`
+				fmt.Sprintf(`<p>Suggest a <b>%s</b> sentence.</p>
+				<p><textarea id="submission" placeholder="Your %s sentence" rows="6" cols="80"></textarea></p>
+				<p><button onclick="submitGame()">Submit!</button></p>`, g.CurrentQuestion.Kind, g.CurrentQuestion.Kind)
 		}
 		return html
 	case StateOfferAnswers:
@@ -419,7 +410,7 @@ func (g *Game) FromFile(f string) error {
 	log.Printf("[Game %s] Reading...", g.AccessCode)
 
 	for i, _ := range g.Questions {
-		g.Questions[i].Xid = xid.New().String()
+		g.Questions[i].Init()
 	}
 
 	log.Printf("[Game %s] Loaded %d quesions.", g.AccessCode, len(g.Questions))
@@ -439,11 +430,16 @@ func (g *Game) FromFile(f string) error {
 
 	log.Printf("[Game %s] %d questions Ready.", g.AccessCode, len(g.Questions))
 
+	for _, qq := range g.Questions {
+		log.Printf("[Game %s] For question %s players will guess the %s sentence.", g.AccessCode, qq.Xid, qq.Kind)
+	}
+
 	return nil
 }
 
 // This function checks to see if the requestor has permission to view the game.
 // For now, the token is just the xid.
+
 func (g *Game) CheckPermission(token string) bool {
 	for _, p := range g.Players {
 		if p.Xid == token {
