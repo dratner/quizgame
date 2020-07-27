@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/rs/xid"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -37,7 +38,7 @@ func (q *Question) Init() {
 
 	ca := Answer{User: CorrectAnswer}
 
-	if q.Last == "The end" || q.Last == "" {
+	if strings.ToLower(q.Last) == "the end" || q.Last == "" {
 		q.Kind = FirstLine
 		ca.Answer = q.First
 	} else {
