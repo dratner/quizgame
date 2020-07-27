@@ -33,17 +33,23 @@ func (q *Question) Init() {
 
 	q.Xid = xid.New().String()
 
-	// Decide first or last
+	// Decide first or last (and special case the books where the last line is unknown)
 
-	rand.Seed(time.Now().UnixNano())
-	v := rand.Int()
 	ca := Answer{User: CorrectAnswer}
-	if v%2 == 0 {
+
+	if q.Last == "The end" || q.Last == "" {
 		q.Kind = FirstLine
 		ca.Answer = q.First
 	} else {
-		q.Kind = LastLine
-		ca.Answer = q.Last
+		rand.Seed(time.Now().UnixNano())
+		v := rand.Int()
+		if v%2 == 0 {
+			q.Kind = FirstLine
+			ca.Answer = q.First
+		} else {
+			q.Kind = LastLine
+			ca.Answer = q.Last
+		}
 	}
 
 	// Seed the correct answer

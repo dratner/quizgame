@@ -38,10 +38,6 @@ func PlayGame(ch chan PlayerReq, id string, accesscode string) {
 			log.Printf("[Game %s] Processing %s request.", g.AccessCode, req.RequestType)
 		}
 
-		if req.Payload != "" {
-			req.Payload = StripTags(req.Payload)
-		}
-
 		switch req.RequestType {
 		case ReqTypeChat:
 			if g.CheckPermission(req.Token) {

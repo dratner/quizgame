@@ -26,6 +26,13 @@ type PlayerReq struct {
 	RespChan    chan PlayerResp
 }
 
+func (r *PlayerReq) Scrub() {
+	r.Token = StripTags(r.Token)
+	r.AccessCode = StripTags(r.AccessCode)
+	r.RequestType = StripTags(r.RequestType)
+	r.Payload = StripTags(r.Payload)
+}
+
 type PlayerResp struct {
 	TimerHtml string
 	ScoreHtml string
@@ -100,12 +107,11 @@ type reqHandler struct {
 
 func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	//log.Printf("Req handler.")
-
 	decoder := json.NewDecoder(r.Body)
 
 	var preq *PlayerReq
 	err := decoder.Decode(&preq)
+	preq.Scrub()
 
 	if err != nil {
 		log.Printf("Error: %s", err)
