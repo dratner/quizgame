@@ -329,7 +329,7 @@ func (g *Game) ShowGame(token string) string {
 			html = "Waiting for others to submit their sentences..."
 		} else {
 			html = fmt.Sprintf("<p>%s</p>", g.CurrentQuestion.Summary) +
-				fmt.Sprintf(`<p>Suggest a <b>%s</b> sentence.</p>
+				fmt.Sprintf(`<p>Write a <b>%s</b> sentence.</p>
 				<p><textarea id="submission" placeholder="Your %s sentence" rows="6" cols="80"></textarea></p>
 				<p><button onclick="submitGame()">Submit!</button></p>`, g.CurrentQuestion.Kind, g.CurrentQuestion.Kind)
 		}
