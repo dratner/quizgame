@@ -108,6 +108,7 @@ type reqHandler struct {
 func (h *reqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
 
 	var preq *PlayerReq
 	err := decoder.Decode(&preq)
